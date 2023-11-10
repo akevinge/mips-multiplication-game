@@ -61,34 +61,37 @@ main:
     jal terminate
 
 
-generate_board:     
-    ############################################
-    # generate_board
-    # generates a 6x6 board of random numbers multiples of two numbers 1 - 9
-    ############################################
-
+# FUN generate_board
+# generates a 6x6 board of random numbers multiples of two numbers 1 - 9
+generate_board:
     addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-
-    li      $t0, 0 # set $t0 to 0 (board index)
-    li      $t1, 36 # 6x6 board
-    la     $t2, BOARD # load board address
+    li      $s0, 0 # set $t0 to 0 (board index)
+    li      $s1, 36 # 6x6 board
+    la     $s2, BOARD # load board address
 
 generate_board_l1:
     jal     generate_rand_multiple                              # generate random multiple of two numbers 1-9
-    sw      $v0, 0($t2) # store random number in board
-    addi    $t2, $t2, 4 # increment board address
-    addi    $t0, $t0, 1 # increment board index
-    bne     $t0, $t1, generate_board_l1
+    sw      $v0, 0($s2) # store random number in board
+    addi    $s2, $s2, 4 # increment board address
+    addi    $s0, $s0, 1 # increment board index
+    bne     $s0, $s1, generate_board_l1
 
-    jal     generate_rand_multiple
-    move    $t0,                    $v0                         # move random number to $t0
-
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
+
     jr			$ra					# jump to $ra
 
+# END FUN generate_board
 
 generate_rand_multiple:
     ############################################
@@ -96,8 +99,12 @@ generate_rand_multiple:
     # generate random multiple of two numbers 1 - 9
     # $v0 = random multiple
     ############################################
-
-    move    $s0,                    $ra                         # save return address
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
 
     jal     generate_rand                                       # generate first random number
     move    $t0,                    $v0                         # move random number to $t0
@@ -108,8 +115,15 @@ generate_rand_multiple:
     mult    $t0,                    $t1                         # multiply $t0 and $t1
     mflo    $v0                                                 # move result to $v0
 
-    move    $ra,                    $s0                         # restore return address
-    jr      $ra
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
 
 
 generate_rand:      

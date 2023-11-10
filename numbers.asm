@@ -47,11 +47,13 @@ paint_number:
     # $a0 = number to paint
     jal extract_digits
 
+    # paint first digit
     move $a0, $v0 # copy number to $a0
     addi $a1, $s1, -8 # copy buffer address to $a1, offset left by 2 pixels
     move $a2, $s2 # copy color to $a2
     jal paint_digit # paint first digit
 
+    # paint second digit
     move $a0, $v1 # copy number to $a0
     addi $a1, $s1, 12 # copy buffer address to $a1, offset right by 3 pixels
     move $a2, $s2 # copy color to $a2
