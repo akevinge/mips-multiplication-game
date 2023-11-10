@@ -106,6 +106,7 @@ paint_board_cell:
     lw $s2, CELL_HEIGHT # load cell height
     lw $s3, ROW_SIZE_BYTES # load row size in bytes
     lw $s6, NEG_ROW_SIZE_BYTES # load negative row size in bytes
+    move $s7, $a0 # copy cell number to $s7
 
 
     # $a0 = cell number (0-35)
@@ -114,7 +115,7 @@ paint_board_cell:
     add $s0, $s0, $v0 # add top left cell position in bytes to frame buffer address
 
     li $s4, 0 # initialize pixel index iterator to 0
-    move $s5, $s0 # copy frame buffer address to $s4
+    move $s5, $s0 # copy frame buffer address to $s5
 top_border_l1:
     move $a0, $s5 # move frame buffer address to $a0
     lw $a1, WHITE # load border color
@@ -149,7 +150,6 @@ bottom_border_l1:
 
     li $s4, 0 # initialize pixel index iterator to 0
     # $s5 = frame buffer address of bottom left corner of cell
-
 left_border_l1:
     move $a0, $s5 # move frame buffer address to $a0
     lw $a1, WHITE # load border color
@@ -159,32 +159,24 @@ left_border_l1:
     addi $s4, $s4, 1 # increment pixel index iterator
     bne $s4, $s2, left_border_l1 # if pixel index iterator is not equal to cell height, jump to left_border_l1
 
-
+paint_board_cell_number:
     # calculate center of cell
     # $t1 = cell width in bytes / 2
-    li $t0, 2
-    div $s1, $t0
-    mflo $t1
-    li $t2, 4
-    mult $t1, $t2
-    mflo $t1
-
-    addi $t1, $t1, 4 # move over 4 bytes because number center is 4 bytes right, this just centers it properly
+    srl $t1, $s1, 1 # divide cell width by 2
+    sll $t1, $t1, 2 # multiply by 4 because each pixel is 4 bytes
 
     # t2 = (cell height / 2) * row size in bytes
-    div $s2, $t0
-    mflo $t2
+    srl $t2, $s2, 1
     mult $t2, $s3
     mflo $t2
 
-    move $s5, $s0 # copy frame buffer address to $s5
-    add $s5, $s5, $t1 # add cell width in bytes / 2 to frame buffer address
-    add $s5, $s5, $t2 # add (cell height / 2) * row size in bytes to frame buffer address
+    add $s0, $s0, $t1
+    add $s0, $s0, $t2 # $a0 = frame buffer address of cell center
 
-    li $a0, 0 # load 0 into $a0
-    move $a1, $s5 # move frame buffer address to $a0
+    move $a0, $s7 # move cell number to $a0
+    move $a1, $s0 # move frame buffer address of cell center to $a1
     lw $a2, WHITE
-    jal paint_number
+    jal paint_number 
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)

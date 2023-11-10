@@ -27,12 +27,52 @@ num_paint_pixel_from_center:
 
     jr      $ra                                                         # return
 
+# FUN paint_number
+# ARGS:
+# $a0: two digit number to paint
+# $a1: buffer address
+# $a2: color to paint
 .globl paint_number
 paint_number:
-    ############################################
-    # paint_number
-    # paints a number in a 4x7px grid
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move $s1, $a1 # copy buffer address to $s1
+    move $s2, $a2 # copy color to $s2
+
     # $a0 = number to paint
+    jal extract_digits
+
+    move $a0, $v0 # copy number to $a0
+    addi $a1, $s1, -8 # copy buffer address to $a1, offset left by 2 pixels
+    move $a2, $s2 # copy color to $a2
+    jal paint_digit # paint first digit
+
+    move $a0, $v1 # copy number to $a0
+    addi $a1, $s1, 12 # copy buffer address to $a1, offset right by 3 pixels
+    move $a2, $s2 # copy color to $a2
+    jal paint_digit # paint second digit
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+    jr			$ra					# jump to $ra
+
+# END FUN paint_number
+
+.globl paint_digit
+paint_digit:
+    ############################################
+    # paint_digit
+    # paints a digit in a 4x7px grid
+    # $a0 = digit to paint
     # $a1 = buffer address
     # $a2 = color
     ############################################
@@ -184,8 +224,12 @@ paint_one:
     #     x
     # 	  x
     ############################################
-    addi    $sp,                            $sp,                -4      # decrement stack pointer
-    sw      $ra,                            0($sp)                      # save return address
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
 
     move $a2, $a0
     move $a3, $a1
@@ -235,8 +279,15 @@ paint_one:
     li      $a1,                            1
     jal     num_paint_pixel_from_center
 
-    lw      $ra,                            0($sp)                      # restore return address
-    jr      $ra
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
 
 
 .globl paint_two
@@ -324,6 +375,7 @@ paint_two:
     jal     num_paint_pixel_from_center
 
     lw      $ra,                            0($sp)
+    addi  $sp,                            $sp,                4       # increment stack pointer
     jr      $ra
 
 

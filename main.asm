@@ -47,25 +47,12 @@ BOARD: .space 144 # 6x6x4B board
     #       
     # Board ####################################
 
+.globl NEWLINE
+NEWLINE: .asciiz "\n"
+
 .text
 main:
-    # li $a0, 9
-    # lw      $a1,                            FRAME_BUFFER                # load frame buffer address
-    # addi    $a1,                            $a1,                5000
-    # lw $a2, WHITE
-    # jal paint_number
-
-    # li $a0, 1
-    # lw      $a1,                            FRAME_BUFFER                # load frame buffer address
-    # addi    $a1,                            $a1,                2560
-    # addi $a1, $a1, 16
-    # lw $a2, WHITE
-    # jal paint_number
-    # jal generate_board
-    # li $a0, 1
-    # lw $a1, WHITE
-    # li $a2, 9
-    # jal paint_board_cell
+    jal generate_board
 
     jal paint_background
 
@@ -80,10 +67,27 @@ generate_board:
     # generates a 6x6 board of random numbers multiples of two numbers 1 - 9
     ############################################
 
-    move    $s0,                    $ra                         # save return address
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$ra, 0($sp)
+
+
+    li      $t0, 0 # set $t0 to 0 (board index)
+    li      $t1, 36 # 6x6 board
+    la     $t2, BOARD # load board address
+
+generate_board_l1:
+    jal     generate_rand_multiple                              # generate random multiple of two numbers 1-9
+    sw      $v0, 0($t2) # store random number in board
+    addi    $t2, $t2, 4 # increment board address
+    addi    $t0, $t0, 1 # increment board index
+    bne     $t0, $t1, generate_board_l1
 
     jal     generate_rand_multiple
     move    $t0,                    $v0                         # move random number to $t0
+
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+    jr			$ra					# jump to $ra
 
 
 generate_rand_multiple:
