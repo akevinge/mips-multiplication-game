@@ -12,7 +12,7 @@
     ###
     # Display ###########################
 LEFT_BOARD_OFFSET: .word 324 # offset of board from left edge of screen in bytes (4B = 1unit)
-LEFT_NUMBERLINE_OFFSET: .word 256 # offset of number line from left edge of screen in bytes (4B = 1unit)
+LEFT_NUMBERLINE_OFFSET: .word 172 # offset of number line from left edge of screen in bytes (4B = 1unit)
 FRAME_BUFFER:       .word   0x10040000                          # frame buffer address
 FRAME_BUFFER_SIZE:  .word   65536                               # 256x256 units
 ROW_SIZE_BYTES:    .word   1024                                 # 256units x 4B
@@ -407,7 +407,7 @@ paint_numberline:
 
     li $s3, 0 # initialize cell iterator to 0
 paint_numberline_l1:
-    move $a0, $s3 # move cell iterator to $a0
+    addi $a0, $s3, 1 # move cell iterator + 1 to $a0
     lw $a1, WHITE
     jal paint_numberline_cell_number
     
