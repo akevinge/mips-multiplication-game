@@ -21,7 +21,16 @@ paint_number:
 
     # $a0 = number to paint
     jal extract_digits
+    bne $v0, $zero, paint_number_multi # if number is not zero, paint two digits
 
+paint_number_single: # paint number with one digit
+    move $a0, $v1 # copy number to $a0
+    move $a1, $s1 # copy buffer address to $a1
+    move $a2, $s2 # copy color to $a2
+    jal paint_digit # paint number
+    j paint_number_end
+
+paint_number_multi: # paint number with two digits
     # paint first digit
     move $a0, $v0 # copy number to $a0
     addi $a1, $s1, -8 # copy buffer address to $a1, offset left by 2 pixels
@@ -33,7 +42,9 @@ paint_number:
     addi $a1, $s1, 12 # copy buffer address to $a1, offset right by 3 pixels
     move $a2, $s2 # copy color to $a2
     jal paint_digit # paint second digit
+    j paint_number_end
 
+paint_number_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
