@@ -54,6 +54,8 @@ main:
     jal paint_background
 
     jal paint_board
+
+    jal paint_numberline
     
     jal terminate
 
