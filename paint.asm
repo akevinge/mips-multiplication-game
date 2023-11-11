@@ -1,10 +1,20 @@
+############################################
+# Unit Width in Pixels: 4
+# Unit Height in Pixels: 4
+# Display Width in Pixels: 1024
+# Display Height in Pixels: 1024
+# Display Unit Size: 256x256
+# Frame Buffer Address: 0x10040000 (heap)
+# Frame Buffer Size: 65536 (256x256)
+############################################
+
 .data
     ###
     # Display ###########################
-FRAME_BUFFER:       .word   0x10000000                          # frame buffer address
-FRAME_BUFFER_SIZE:  .word   16384                               # 128x128 units
-ROW_SIZE_BYTES:    .word   512                                 # 128units x 4B
-NEG_ROW_SIZE_BYTES: .word   -512                                # -128units x 4B
+FRAME_BUFFER:       .word   0x10040000                          # frame buffer address
+FRAME_BUFFER_SIZE:  .word   65536                               # 256x256 units
+ROW_SIZE_BYTES:    .word   1024                                 # 256units x 4B
+NEG_ROW_SIZE_BYTES: .word   -1024                                # -256units x 4B
 CELL_WIDTH: .word 16 # cell width in pixels
 CELL_HEIGHT: .word 16 # cell height in pixels
 BOARD_NUMBERLINE_ROW_GAP: .word 16 # number of rows between board and number line

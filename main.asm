@@ -1,13 +1,3 @@
-    ############################################
-    # Unit Width in Pixels: 4
-    # Unit Height in Pixels: 4
-    # Display Width in Pixels: 512
-    # Display Height in Pixels: 512
-    # Display Unit Size: 128x128
-    # Frame Buffer Address: 0x10010000
-    # Frame Buffer Size: 16384
-    ############################################
-
 .data
     # Colors ##########################
 .globl BACKGROUND_COLOR
