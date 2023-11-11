@@ -9,7 +9,6 @@
     ############################################
 
 .data
-    ###
     # Colors ##########################
 .globl BACKGROUND_COLOR
 BACKGROUND_COLOR:   .word   0x00000000
@@ -19,33 +18,31 @@ WHITE:               .word   0xFFFFFFFF
     #       
     # Colors ###################################
 
-    ###
-    # Display ###########################
-.globl FRAME_BUFFER
-FRAME_BUFFER:       .word   0x10000000                          # frame buffer address
-.globl FRAME_BUFFER_SIZE
-FRAME_BUFFER_SIZE:  .word   16384                               # 128x128 units
-.globl ROW_SIZE_BYTES
-ROW_SIZE_BYTES:    .word   512                                 # 128units x 4B
-.globl NEG_ROW_SIZE_BYTES
-NEG_ROW_SIZE_BYTES: .word   -512                                # -128units x 4B
-.globl CELL_WIDTH
-CELL_WIDTH: .word 16
-.globl CELL_HEIGHT
-CELL_HEIGHT: .word 16
+    # Board ##############################
+.globl BOARD
+BOARD: .space 144 # 6x6x4B board
 .globl BOARD_WIDTH_CELLS
 BOARD_WIDTH_CELLS: .word 6 # number of cells per row
 .globl BOARD_HEIGHT_CELLS
 BOARD_HEIGHT_CELLS: .word 6 # number of rows
     #       
-    # Display ####################################
+    # Board ####################################
 
     ###
-    # Board ##############################
-.globl BOARD
-BOARD: .space 144 # 6x6x4B board
+    # Keyboard ############################
+.globl KEYBOARD
+KEYBOARD: .word 0xFFFF0004
+A_KEY: .word 0x00000061
+D_KEY: .word 0x00000064
+    #
+    # Keyboard ##################################
+
+    ###
+    # Game ###############################
+.globl GAME_STATE
+GAME_STATE: .word 0 # 0 = waiting for input, 1 = waiting on opponent, 2 = game over
     #       
-    # Board ####################################
+    # Game #####################################
 
 .globl NEWLINE
 NEWLINE: .asciiz "\n"
@@ -59,6 +56,35 @@ main:
     jal paint_board
     
     jal terminate
+
+# FUN keyboard_listener
+keyboard_listener:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+keyboard_listener_l1:
+    lw $a0, KEYBOARD
+    lw $t0, 0($a0)
+    beq $t0, $zero, keyboard_listener_l1 # wait for keypress to continue, otherwise loop
+    move $a0, $t0
+    li $v0, 34
+    syscall
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN keyboard_listener
 
 
 # FUN generate_board

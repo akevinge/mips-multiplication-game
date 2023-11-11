@@ -1,3 +1,15 @@
+.data
+    ###
+    # Display ###########################
+FRAME_BUFFER:       .word   0x10000000                          # frame buffer address
+FRAME_BUFFER_SIZE:  .word   16384                               # 128x128 units
+ROW_SIZE_BYTES:    .word   512                                 # 128units x 4B
+NEG_ROW_SIZE_BYTES: .word   -512                                # -128units x 4B
+CELL_WIDTH: .word 16 # cell width in pixels
+CELL_HEIGHT: .word 16 # cell height in pixels
+    ####################################
+
+.text
 # FUN paint_pixel
 # paints a pixel at specific position in frame buffer address
 # ARGS:
@@ -16,6 +28,48 @@ paint_pixel:
 
 # END FUN paint_pixel
 
+# FUN paint_pixel_relative
+# paints a pixel relative to a center point
+# ARGS:
+# $a0: x position of center
+# $a1: y position of center
+# $a2: buffer address
+# $a3: color
+.globl paint_pixel_relative
+paint_pixel_relative:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    li      $t0,                            4                           # load 4 into $t0
+    mult    $a0,                            $t0                         # multiply x position by 4 bytes
+    mflo    $t1                                                         # move result to $t1, this is our x offset
+
+    lw      $t0,                            NEG_ROW_SIZE_BYTES          # load row size in bytes
+    mult    $a1,                            $t0                         # multiply y position by row size
+    mflo    $t2                                                         # move result to $t2, this is our y offset
+
+    add     $t3,                            $t1,                $t2     # add x and y offsets to get pixel offset
+    add     $t3,                            $t3,                $a2     # add pixel offset to buffer address
+
+    move $a0, $t3
+    move $a1, $a3
+    jal paint_pixel # paint pixel
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN paint_pixel_relative
 
 # FUN paint_background
 # paints the entire background with BACKGROUND_COLOR

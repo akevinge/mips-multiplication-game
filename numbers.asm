@@ -2,31 +2,6 @@
 jTable: .word paint_zero, paint_one, paint_two, paint_three, paint_four, paint_five, paint_six, paint_seven, paint_eight, paint_nine
 
 .text
-.globl num_paint_pixel_from_center
-num_paint_pixel_from_center:
-    ############################################
-    # num_paint_pixel_from_center
-    # paints a pixel relative to the center of a 4x7px grid where (3,3) is the center.
-    # $a0 = x position of center
-    # $a1 = y position of center
-    # $a2 = buffer address
-    # $a3 = color
-    ############################################
-    li      $t0,                            4                           # load 4 into $t0
-    mult    $a0,                            $t0                         # multiply x position by 4 bytes
-    mflo    $t1                                                         # move result to $t1, this is our x offset
-
-    lw      $t0,                            NEG_ROW_SIZE_BYTES          # load row size in bytes
-    mult    $a1,                            $t0                         # multiply y position by row size
-    mflo    $t2                                                         # move result to $t2, this is our y offset
-
-    add     $t3,                            $t1,                $t2     # add x and y offsets to get pixel offset
-    add     $t3,                            $t3,                $a2     # add pixel offset to buffer address
-
-    sw      $a3,                            0($t3)                      # store color in buffer
-
-    jr      $ra                                                         # return
-
 # FUN paint_number
 # ARGS:
 # $a0: two digit number to paint
@@ -137,72 +112,72 @@ paint_zero:
     # Draw 1 pixel right of  center. 
     li      $a0,                            1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixel up from center. 
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center.
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels up from center.
     li      $a0,                            -1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels up from center.
     li      $a0,                            -2
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 1 pixels up from center.
     li      $a0,                            -2
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left from center.
     li      $a0,                            -2
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixel down from center.
     li      $a0,                            1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 2 pixels down from center.
     li     $a0,                            1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels down from center.
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels down from center.
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 1 pixels down from center.
     li      $a0,                            -2
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -239,47 +214,47 @@ paint_one:
     # Draw pixel at center.
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels up from center.
     li      $a0,                            0
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up from center.
     li      $a0,                            0
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center.
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 2 pixels up from center.
     li      $a0,                            -1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 1 pixel up from center.
     li      $a0,                            -2
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -319,62 +294,62 @@ paint_two:
     # Draw 1 pixel at center
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 3 pixel down from center
     li      $a0,                            1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels from down from center
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels left and 3 pixels down from center
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 3 pixels down from center
     li      $a0,                            -2
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels down from center
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels left and 1 pixels down from center
     li      $a0,                            -1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels right and 1 pixels up from center
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels right and 2 pixels up from center
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels up from center
     li      $a0,                            -1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixel left and 2 pixels up from center
     li      $a0,                            -2
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -408,62 +383,62 @@ paint_three:
     # Draw 1 pixels up and 1 pixel right from center
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up and 1 pixel right from center
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down and 1 pixel left
     li      $a0,                            -1
     li      $a1,                             3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up and 2 pixel left
     li      $a0,                            -2
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw pixel at center
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left from center
     li      $a0,                            -1
     li      $a1,                             0 
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels down and 1 pixel right from center
     li      $a0,                            1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 1 pixel right from center
     li      $a0,                            1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down and 1 pixel left
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 2 pixel left
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -497,64 +472,64 @@ paint_four:
     # Draw pixel at center.
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixels up from center.
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right 2 pixels up from center.
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 3 pixels up from center.
     li      $a0,                            1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixels down from center.
     li      $a0,                             1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 2 pixels down from center.
     li      $a0,                             1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 3 pixels down from center.
     li      $a0,                             1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
 
     # Draw 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels and 2 left from center.
     li      $a0,                            -2
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel up and 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
 
     # Draw 2 pixels up from center.
     li      $a0,                            0
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -588,73 +563,73 @@ paint_five:
     # Draw 1 pixel right of center.
     li      $a0,                            1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel down and 1 right of center.
     li      $a0,                            1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 1 right of center.
     li      $a0,                            1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 2 pixels left from center.
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel up from center.
     li      $a0,                            0
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel up and 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel up and 2 pixel left from center.
     li      $a0,                            -2
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
 
     # Draw 2 pixel up and 2 pixel left from center.
     li      $a0,                            -2
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixel up and 2 pixel left from center.
     li      $a0,                            -2
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixel up and 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixel up from center.
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixel up and 1 right from center.
     li      $a0,                            1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -688,72 +663,72 @@ paint_six:
     # Draw 1 pixel at center. 
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left of center. 
     li      $a0,                            -1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left of center. 
     li      $a0,                            -2
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels right and 1 pixel down from center. 
     li      $a0,                             1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels right and 2 pixels down from center. 
     li      $a0,                             1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down from center. 
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down and 1 pixel left from center. 
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 2 pixel left from center. 
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 2 pixel left from center. 
     li      $a0,                            -2
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel up and 2 pixel left from center. 
     li      $a0,                            -2
     li      $a1,                             1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixel up and 2 pixel left from center. 
     li      $a0,                            -2
     li      $a1,                             2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixel up and 1 pixel left from center. 
     li      $a0,                            -1
     li      $a1,                             3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center. 
     li      $a0,                             0
     li      $a1,                             3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels up and 2 pixels right from center. 
     li      $a0,                             1
     li      $a1,                             2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -787,52 +762,52 @@ paint_seven:
     # Draw pixel at center. 
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixel up from center. 
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixels left and 1 pixels down from center.
     li      $a0,                            -1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels down from center.
     li      $a0,                            -1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 3 pixels down from center.
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center.
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels up from center.
     li      $a0,                            -1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixel left and 3 pixels up from center.
     li      $a0,                            -2
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -866,72 +841,72 @@ paint_eight:
     # Draw pixel at center. 
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixel up from center. 
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center.
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels up from center.
     li      $a0,                            -1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels up from center.
     li      $a0,                            -2
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 1 pixels up from center.
     li      $a0,                            -2
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixel down from center.
     li      $a0,                            1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 2 pixels down from center.
     li     $a0,                            1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels down from center.
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels down from center.
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 1 pixels down from center.
     li      $a0,                            -2
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer
@@ -965,72 +940,72 @@ paint_nine:
     # Draw pixel at center. 
     li      $a0,                            0
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right of center.
     li      $a0,                            1
     li      $a1,                            0
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left of center.
     li      $a0,                            -1
     li      $a1,                            0
-    jal    num_paint_pixel_from_center
+    jal    paint_pixel_relative
 
     # Draw 2 pixels left and 1 pixel up from center.
     li      $a0,                            -2
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels left and 2 pixels up from center.
     li      $a0,                            -2
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel left and 3 pixels up from center.
     li      $a0,                            -1
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels up from center.
     li      $a0,                            0
     li      $a1,                            3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels up and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel right and 1 pixel up from center.
     li      $a0,                            1
     li      $a1,                            1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 1 pixel down and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            -1
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 1 pixel right from center.
     li      $a0,                            1
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down from center.
     li      $a0,                            0
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 3 pixels down and 1 pixel left from center.
     li      $a0,                            -1
     li      $a1,                            -3
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     # Draw 2 pixels down and 2 pixel left from center.
     li      $a0,                            -2
     li      $a1,                            -2
-    jal     num_paint_pixel_from_center
+    jal     paint_pixel_relative
 
     lw      $ra,                            0($sp)
     addi  $sp,                            $sp,                4       # increment stack pointer

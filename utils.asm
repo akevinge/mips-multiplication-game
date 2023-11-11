@@ -1,3 +1,7 @@
+.data
+NEWLINE: .asciiz "\n"
+
+.text
 .globl extract_digits
 # FUN extract_digits
 # ARGS:
