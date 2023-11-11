@@ -389,20 +389,11 @@ paint_numberline:
     li $s3, 0 # initialize cell iterator to 0
 paint_numberline_l1:
     move $a0, $s3 # move cell iterator to $a0
-    li $v0, 1
-    syscall
-    jal calculate_numberline_cell_position # calculate top left position of cell 1 in number line in frame buffer
-    # $v0 = top left position of cell 1 in number line in frame buffer
-    
-    lw $t0, FRAME_BUFFER
-    add $s2, $t0, $v0 # $s2 = top left position of cell in number line as address in frame buffer
-
-    move $a0, $s2 # move frame buffer address of cell center to $a0
-    lw $a1, WHITE # load cell color
-    jal paint_pixel
+    lw $a1, WHITE
+    jal paint_numberline_cell_number
     
     addi $s3, $s3, 1 # increment cell iterator
-    bne $s3, 8, paint_numberline_l1 # if cell iterator is not equal to 8, jump to paint_numberline_l1
+    bne $s3, 9, paint_numberline_l1 # if cell iterator is not equal to 8, jump to paint_numberline_l1
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -414,6 +405,84 @@ paint_numberline_l1:
     jr			$ra					# jump to $ra
 
 # END FUN paint_numberline
+
+paint_numberline_cell_number:
+    ############################################
+    # paint_numberline_cell_number
+    # paints a cell of the board
+    # Each cell is 15px x 13px (including border).
+    # $a0 = cell number (0-8)
+    # $a1 = cell color
+    ############################################
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move $s1, $a0 # copy cell value to $s1
+
+    # $a0 = cell number (0-35)
+    jal calculate_numberline_cell_position
+    # $v0 = byte position in frame buffer for top left cell position
+    lw $t0, FRAME_BUFFER
+    add $s0, $t0, $v0 # add top left cell position in bytes to frame buffer address
+
+    move $a0, $s0
+    jal paint_cell_borders
+
+    move $a0, $s1 # move cell value to $a0
+    move $a1, $s0 # move frame buffer address of top left corner of cell position to $a1
+    jal paint_cell_number
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+
+# FUN calculate_numberline_cell_position
+# calculates the top left position of a cell in the number line in the frame buffer
+# ARGS:
+# $a0: number (0-8)
+# RETURN $v0: top left position of number line (bytes) in frame buffer
+calculate_numberline_cell_position:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    jal calculate_number_line_position # calculate top left position of number line in frame buffer
+    move $s0, $v0 # copy top left position of number line in frame buffer to $s0
+
+    lw $t0, BOARD_NUMBERLINE_CELL_SIZE
+    li $t1, 4
+    mult $t0, $t1
+    mflo $t2 # $t2 = cell width in bytes
+
+    mult $a0, $t2 # multiply cell number by cell width in bytes
+    mflo $t3 # $t3 = cell number * cell width in bytes
+
+    add $v0, $s0, $t3 # $v0 = top left position of cell in number line in frame buffer
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN calculate_numberline_cell_position
+
 
 # FUN calculate_number_line_position
 # calculates the top left position of the number line in the frame buffer
@@ -455,40 +524,3 @@ calculate_number_line_position:
 
 # END FUN calculate_number_line_position
 
-
-# FUN calculate_numberline_cell_position
-# calculates the top left position of a cell in the number line in the frame buffer
-# ARGS:
-# $a0: number (0-8)
-# RETURN $v0: top left position of number line (bytes) in frame buffer
-calculate_numberline_cell_position:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    jal calculate_number_line_position # calculate top left position of number line in frame buffer
-    move $s0, $v0 # copy top left position of number line in frame buffer to $s0
-
-    lw $t0, BOARD_NUMBERLINE_CELL_SIZE
-    li $t1, 4
-    mult $t0, $t1
-    mflo $t2 # $t2 = cell width in bytes
-
-    mult $a0, $t2 # multiply cell number by cell width in bytes
-    mflo $t3 # $t3 = cell number * cell width in bytes
-
-    add $v0, $s0, $t3 # $v0 = top left position of cell in number line in frame buffer
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    jr			$ra					# jump to $ra
-
-# END FUN calculate_numberline_cell_position
