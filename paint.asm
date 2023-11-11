@@ -11,6 +11,8 @@
 .data
     ###
     # Display ###########################
+LEFT_BOARD_OFFSET: .word 324 # offset of board from left edge of screen in bytes (4B = 1unit)
+LEFT_NUMBERLINE_OFFSET: .word 256 # offset of number line from left edge of screen in bytes (4B = 1unit)
 FRAME_BUFFER:       .word   0x10040000                          # frame buffer address
 FRAME_BUFFER_SIZE:  .word   65536                               # 256x256 units
 ROW_SIZE_BYTES:    .word   1024                                 # 256units x 4B
@@ -381,6 +383,8 @@ calculate_board_cell_position:
     mflo $s3
 
     add $v0, $s2, $s3 # $v0 = top left cell position in bytes
+    lw $t0, LEFT_BOARD_OFFSET
+    add $v0, $v0, $t0 # $v0 = top left cell position in bytes + left display offset
 
     # restore registers
     lw			$s0, 16($sp)
@@ -527,6 +531,8 @@ calculate_number_line_position:
     mflo $s2 # $s2 = gap between board and number line in bytes
 
     add $v0, $s0, $s2 # $v1 = top right of number line in frame buffer
+    lw $t0, LEFT_NUMBERLINE_OFFSET
+    add $v0, $v0, $t0 # $v0 = top left of number line in frame buffer + left number line offset
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
