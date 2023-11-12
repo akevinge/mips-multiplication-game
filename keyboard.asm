@@ -1,9 +1,11 @@
 .data
     # Keyboard ############################
 KEYBOARD: .word 0xFFFF0004
-A_KEY: .word 0x00000061
-D_KEY: .word 0x00000064
-Q_KEY: .word 0x00000071
+L_KEY: .word 0x0000006C # move selected pointer to the right
+H_KEY: .word 0x00000068 # move selected pointer to the left
+K_KEY: .word 0x0000006B # select top pointer
+J_KEY: .word 0x0000006A # select bottom pointer
+Q_KEY: .word 0x00000071 # quit
     #######################################
 
 .text
@@ -14,6 +16,7 @@ Q_KEY: .word 0x00000071
 try_get_next_keypress:
     lw $a0, KEYBOARD
     lw $v0, 0($a0)
+    sw $zero, 0($a0) # clear keyboard
     jr			$ra					# jump to $ra
 
 # END FUN try_get_next_keypress
@@ -30,14 +33,28 @@ key_handler:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-_a_key_case:
-    lw $t0, A_KEY
-    bne $a0, $t0, _d_key_case
+_l_key_case:
+    lw $t0, L_KEY
+    bne $a0, $t0, _h_key_case
+    jal increment_selected_pointer
     j _key_handler_end
 
-_d_key_case:
-    lw $t0, D_KEY
+_h_key_case:
+    lw $t0, H_KEY
+    bne $a0, $t0, _k_key_case
+    jal decrement_selected_pointer
+    j _key_handler_end
+
+_k_key_case:
+    lw $t0, K_KEY
+    bne $a0, $t0, _j_key_case
+    jal select_top_pointer
+    j _key_handler_end
+
+_j_key_case:
+    lw $t0, J_KEY
     bne $a0, $t0, _q_key_case
+    jal select_bottom_pointer
     j _key_handler_end
 
 _q_key_case:
@@ -57,25 +74,3 @@ _key_handler_end:
     jr			$ra					# jump to $ra
 
 # END FUN key_handler
-
-# FUN a_key_handler
-a_key_handler:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    jr			$ra					# jump to $ra
-
-# END FUN a_key_handler
