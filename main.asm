@@ -10,7 +10,15 @@ WHITE:               .word   0xFFFFFFFF
 
     # Board ##############################
 .globl BOARD
-BOARD: .space 144 # 6x6x4B board
+BOARD: .word  # 6x6 board of random numbers multiples of two numbers 1-9
+1, 2, 3, 4, 5, 6,
+7, 8, 9, 10, 12, 14,
+15, 16, 18, 20, 21, 24,
+25, 27, 28, 30, 32, 35,
+36, 40, 42, 45, 48, 49,
+54, 56, 63, 64, 72, 81
+.globl SELECTION_BOARD
+SELECTION_BOARD: .space 144 # 6x6x4B board of 1/0 where 1 = selected, 0 = not selected
 .globl BOARD_WIDTH_CELLS
 BOARD_WIDTH_CELLS: .word 6 # number of cells per row
 .globl BOARD_HEIGHT_CELLS
@@ -23,8 +31,6 @@ NEWLINE: .asciiz "\n"
 
 .text
 main:
-    jal generate_board
-
     jal paint_background
 
     jal paint_board
@@ -34,90 +40,6 @@ main:
     jal init_pointers
 
     jal game_loop
-
-# FUN generate_board
-# generates a 6x6 board of random numbers multiples of two numbers 1 - 9
-generate_board:
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    li      $s0, 0 # set $t0 to 0 (board index)
-    li      $s1, 36 # 6x6 board
-    la     $s2, BOARD # load board address
-
-generate_board_l1:
-    jal     generate_rand_multiple                              # generate random multiple of two numbers 1-9
-    sw      $v0, 0($s2) # store random number in board
-    addi    $s2, $s2, 4 # increment board address
-    addi    $s0, $s0, 1 # increment board index
-    bne     $s0, $s1, generate_board_l1
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    jr			$ra					# jump to $ra
-
-# END FUN generate_board
-
-generate_rand_multiple:
-    ############################################
-    # generate_rand_multiple
-    # generate random multiple of two numbers 1 - 9
-    # $v0 = random multiple
-    ############################################
-    addi		$sp, $sp, -20			# $sp -= 20
-    sw			$s0, 16($sp)
-    sw			$s1, 12($sp)
-    sw			$s2, 8($sp)
-    sw			$s3, 4($sp)
-    sw			$ra, 0($sp)
-
-    jal     generate_rand                                       # generate first random number
-    move    $t0,                    $v0                         # move random number to $t0
-
-    jal     generate_rand                                       # generate second random number
-    move    $t1,                    $v0                         # move random number to $t1
-
-    mult    $t0,                    $t1                         # multiply $t0 and $t1
-    mflo    $v0                                                 # move result to $v0
-
-    lw			$s0, 16($sp)
-    lw			$s1, 12($sp)
-    lw			$s2, 8($sp)
-    lw			$s3, 4($sp)
-    lw			$ra, 0($sp)
-    addi		$sp, $sp, 20			# $sp += 20
-
-    jr			$ra					# jump to $ra
-
-
-
-generate_rand:      
-    ############################################
-    #       
-    # generate_rand
-    # generates a random number between 1 and 9 (inclusive)
-    # $v0 = random number
-    ############################################
-
-    li      $a0,                    1                           # set $a0 to 1 (ID of random generator)
-    li      $a1,                    9                           # set $a1 to 9 (max random number). 0 - 8 (inclusive)
-    li      $v0,                    42                          # set $v0 to 42 (syscall for random number)
-    syscall                                                     # call random number
-
-    move    $v0,                    $a0                         # set $v0 to random number
-    add     $v0,                    $v0,                    1   # add 1 to random number to make it 1 - 9 (inclusive)
-
-    jr      $ra
-
 
 .globl terminate
 terminate:          
