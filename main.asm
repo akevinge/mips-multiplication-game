@@ -19,18 +19,15 @@ BOARD_HEIGHT_CELLS: .word 6 # number of rows
     # Board ####################################
 
     ###
-    # Keyboard ############################
-.globl KEYBOARD
-KEYBOARD: .word 0xFFFF0004
-A_KEY: .word 0x00000061
-D_KEY: .word 0x00000064
-    #
-    # Keyboard ##################################
-
-    ###
     # Game ###############################
 .globl GAME_STATE
 GAME_STATE: .word 0 # 0 = waiting for input, 1 = waiting on opponent, 2 = game over
+SELECTED_POINTER: .word 1 # pointer selected to be moved 1 = top pointer, -1 = bottom pointer
+TOP_POINTER_POSITION: .word -1 
+BOTTOM_POINTER_POSITION: .word -1
+TICK_STATE: .word 0 # state of tick which signals an update to the display
+PREV_TICK_STATE: .word 0 # previous state of tick which signals an update to the display
+TICKET_PERIOD_MS: .word 500 # period of tick which signals an update to the display
     #       
     # Game #####################################
 
@@ -46,11 +43,33 @@ main:
     jal paint_board
 
     jal paint_numberline
-    
-    jal terminate
 
-# FUN keyboard_listener
-keyboard_listener:
+    jal init_pointers
+
+game_loop:
+    jal update_tick
+
+    jal try_get_next_keypress
+    # $v0 = keypress
+    move $a0, $v0
+    jal key_handler
+
+    jal routine_update_display
+
+    jal sleep
+    j game_loop
+
+sleep:
+    lw $a0, TICKET_PERIOD_MS
+    li $v0, 32
+    syscall
+
+    jr $ra
+
+# FUN update_tick
+# Updates tick state and saves previous tick state.
+# Tick alternates between 0 and 1.
+update_tick:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
     sw			$s1, 12($sp)
@@ -58,13 +77,54 @@ keyboard_listener:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-keyboard_listener_l1:
-    lw $a0, KEYBOARD
-    lw $t0, 0($a0)
-    beq $t0, $zero, keyboard_listener_l1 # wait for keypress to continue, otherwise loop
-    move $a0, $t0
-    li $v0, 34
-    syscall
+    la $s0, TICK_STATE
+    la $s1, PREV_TICK_STATE
+
+    lw $t0, 0($s0)
+    sw $t0, 0($s1) # PREV_TICK_STATE = TICK_STATE
+
+    beq $t0, $zero, increment_tick # if TICK_STATE == 0, increment_tick
+decrement_tick:
+    addi $t0, $t0, -1
+    sw $t0, 0($s0)
+    j update_tick_end
+
+increment_tick:
+    addi $t0, $t0, 1
+    sw $t0, 0($s0)
+    j update_tick_end
+
+update_tick_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN update_tick
+
+# FUN init_pointers
+# Initializes the pointers to the top and bottom of the board.
+init_pointers:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $a0, TOP_POINTER_POSITION
+    li $a1, 1
+    lw $a2, WHITE
+    jal paint_pointer
+
+    lw $a0, BOTTOM_POINTER_POSITION
+    li $a1, -1
+    lw $a2, WHITE
+    jal paint_pointer
 
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
@@ -76,8 +136,81 @@ keyboard_listener_l1:
     move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
-# END FUN keyboard_listener
+# END FUN init_pointers
 
+# FUN routine_update_display
+# Updates trivial display details (e.g. blinking pointers)
+routine_update_display:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+_blink_selected_pointer: # blink selected pointer by changing color depending on tick state
+    lw $t0, TICK_STATE
+    beq $t0, $zero, _paint_selected_pointer_bg # if TICK_STATE == 0, paint pointer background color
+_paint_selected_pointer_white:
+    jal get_selected_pointer_position
+    move $a0, $v0
+    lw $a1, SELECTED_POINTER
+    lw $a2, WHITE
+    jal paint_pointer
+    j _paint_selected_pointer_end
+_paint_selected_pointer_bg:
+    jal get_selected_pointer_position
+    move $a0, $v0
+    lw $a1, SELECTED_POINTER
+    lw $a2, BACKGROUND_COLOR
+    jal paint_pointer
+    j _paint_selected_pointer_end
+
+_paint_selected_pointer_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN routine_update_display
+
+# FUN get_selected_pointer_position
+# Gets the position of the selected pointer.
+# RETURN $v0: position of selected pointer
+get_selected_pointer_position:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $t0, SELECTED_POINTER
+    beq $t0, 1, _get_top_pointer_position # if SELECTED_POINTER == 1, return TOP_POINTER_POSITION
+
+_get_top_pointer_position:
+    lw $v0, TOP_POINTER_POSITION
+    j _get_selected_pointer_position_end
+
+_get_bottom_pointer_position:
+    lw $v0, BOTTOM_POINTER_POSITION
+    j _get_selected_pointer_position_end
+
+_get_selected_pointer_position_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN get_selected_pointer_positi
 
 # FUN generate_board
 # generates a 6x6 board of random numbers multiples of two numbers 1 - 9
@@ -163,6 +296,8 @@ generate_rand:
     jr      $ra
 
 
+.globl terminate
 terminate:          
+    jal paint_background # reset background
     li      $v0,                    10
     syscall 

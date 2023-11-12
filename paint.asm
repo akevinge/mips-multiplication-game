@@ -12,7 +12,7 @@
     ###
     # Display ###########################
 LEFT_BOARD_OFFSET: .word 324 # offset of board from left edge of screen in bytes (4B = 1unit)
-LEFT_NUMBERLINE_OFFSET: .word 172 # offset of number line from left edge of screen in bytes (4B = 1unit)
+LEFT_NUMBERLINE_OFFSET: .word 224 # offset of number line from left edge of screen in bytes (4B = 1unit)
 FRAME_BUFFER:       .word   0x10040000                          # frame buffer address
 FRAME_BUFFER_SIZE:  .word   65536                               # 256x256 units
 ROW_SIZE_BYTES:    .word   1024                                 # 256units x 4B
@@ -214,12 +214,12 @@ left_border_l1:
 # END FUN paint_cell_borders
 
 
-# ██████╗ ██╗███████╗██████╗ ██╗      █████╗ ██╗   ██╗    
-# ██╔══██╗██║██╔════╝██╔══██╗██║     ██╔══██╗╚██╗ ██╔╝    
-# ██║  ██║██║███████╗██████╔╝██║     ███████║ ╚████╔╝     
-# ██║  ██║██║╚════██║██╔═══╝ ██║     ██╔══██║  ╚██╔╝      
-# ██████╔╝██║███████║██║     ███████╗██║  ██║   ██║       
-# ╚═════╝ ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝       
+# ██████╗  █████╗  ██████╗██╗  ██╗ ██████╗ ██████╗  ██████╗ ██╗   ██╗███╗   ██╗██████╗ 
+# ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝ ██╔══██╗██╔═══██╗██║   ██║████╗  ██║██╔══██╗
+# ██████╔╝███████║██║     █████╔╝ ██║  ███╗██████╔╝██║   ██║██║   ██║██╔██╗ ██║██║  ██║
+# ██╔══██╗██╔══██║██║     ██╔═██╗ ██║   ██║██╔══██╗██║   ██║██║   ██║██║╚██╗██║██║  ██║
+# ██████╔╝██║  ██║╚██████╗██║  ██╗╚██████╔╝██║  ██║╚██████╔╝╚██████╔╝██║ ╚████║██████╔╝
+# ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ 
                                                         
 # FUN paint_background
 # paints the entire background with BACKGROUND_COLOR
@@ -246,6 +246,13 @@ paint_background_loop:
     jr      $ra                                                 # return
 
 # END FUN paint_background
+
+# ██████╗  ██████╗  █████╗ ██████╗ ██████╗ 
+# ██╔══██╗██╔═══██╗██╔══██╗██╔══██╗██╔══██╗
+# ██████╔╝██║   ██║███████║██████╔╝██║  ██║
+# ██╔══██╗██║   ██║██╔══██║██╔══██╗██║  ██║
+# ██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝
+# ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ 
 
 .globl paint_board
 paint_board:
@@ -395,6 +402,14 @@ calculate_board_cell_position:
     addi		$sp, $sp, 20			# $sp += 20
     jr $ra
 
+
+# ███╗   ██╗██╗   ██╗███╗   ███╗██████╗ ███████╗██████╗ ██╗     ██╗███╗   ██╗███████╗
+# ████╗  ██║██║   ██║████╗ ████║██╔══██╗██╔════╝██╔══██╗██║     ██║████╗  ██║██╔════╝
+# ██╔██╗ ██║██║   ██║██╔████╔██║██████╔╝█████╗  ██████╔╝██║     ██║██╔██╗ ██║█████╗  
+# ██║╚██╗██║██║   ██║██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗██║     ██║██║╚██╗██║██╔══╝  
+# ██║ ╚████║╚██████╔╝██║ ╚═╝ ██║██████╔╝███████╗██║  ██║███████╗██║██║ ╚████║███████╗
+# ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝
+                                                                                   
 # FUN paint_numberline
 .globl paint_numberline
 paint_numberline:
@@ -407,7 +422,7 @@ paint_numberline:
 
     li $s3, 0 # initialize cell iterator to 0
 paint_numberline_l1:
-    addi $a0, $s3, 1 # move cell iterator + 1 to $a0
+    move $a0, $s3
     lw $a1, WHITE
     jal paint_numberline_cell_number
     
@@ -451,7 +466,7 @@ paint_numberline_cell_number:
     move $a0, $s0
     jal paint_cell_borders
 
-    move $a0, $s1 # move cell value to $a0
+    addi $a0, $s1, 1 # move cell value + 1 to $a0
     move $a1, $s0 # move frame buffer address of top left corner of cell position to $a1
     jal paint_cell_number
 
@@ -545,3 +560,166 @@ calculate_number_line_position:
 
 # END FUN calculate_number_line_position
 
+# ██████╗  ██████╗ ██╗███╗   ██╗████████╗███████╗██████╗ ███████╗
+# ██╔══██╗██╔═══██╗██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗██╔════╝
+# ██████╔╝██║   ██║██║██╔██╗ ██║   ██║   █████╗  ██████╔╝███████╗
+# ██╔═══╝ ██║   ██║██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗╚════██║
+# ██║     ╚██████╔╝██║██║ ╚████║   ██║   ███████╗██║  ██║███████║
+# ╚═╝      ╚═════╝ ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝
+
+# FUN paint_pointer
+# ARGS:
+# $a0: cell number that pointer is on (0-8)
+# $a1: position of triangle (1 = top, -1 = bottom)
+# $a2: color of triangle
+.globl paint_pointer
+paint_pointer:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move $s0, $a0
+    move $s1, $a1
+    move $s2, $a2
+
+    jal calculate_number_line_position 
+    # $v0 = top left position of number line in frame buffer
+
+    lw $t0, BOARD_NUMBERLINE_CELL_SIZE
+    sll $t0, $t0, 2 # multiply cell size by 4 bytes
+    mult $t0, $s0
+    mflo $t0 # $t1 = cell size * cell number
+
+    add $t0, $t0, $v0 # $t0 = top left position of cell in number line in frame buffer + (cell size * cell number)
+
+    lw $t1, FRAME_BUFFER
+    add $t3, $t0, $t1 # $s1 = top left position of cell in number line in frame buffer + (cell size * cell number) + frame buffer address
+    
+    lw $t0, BOARD_NUMBERLINE_CELL_SIZE
+    sll $t0, $t0, 2 # multiply cell size by 4 bytes
+    srl $t0, $t0, 1 # divide cell size by 2
+    add $t3, $t3, $t0 # shift pointer over by half a cell
+
+    beq $s1, 1, _top_pointer
+    j _bottom_pointer
+
+_top_pointer:
+    lw $t0, NEG_ROW_SIZE_BYTES
+    sll $t0, $t0, 2 # multiply row size by 4 bytes
+    add $t3, $t3, $t0 # $t3 = top left position of cell in number line in frame buffer + (cell size * cell number) + frame buffer address + (row size * 4)
+
+    move $a0, $t3 # move frame buffer address of top left corner of cell position to $a0
+    move $a1, $s2 # move triangle color to $a1
+    li $a2, -1 # load direction of triangle (1 = up, -1 = down)
+    jal paint_triangle # paint triangle
+    j paint_pointer_end
+
+_bottom_pointer:
+    # move pointer below cell
+    lw $t0, BOARD_NUMBERLINE_CELL_SIZE
+    addi $t0, $t0, 4 # go 4 rows below the underside of the cell
+    lw $t1, ROW_SIZE_BYTES
+    mult $t0, $t1 # multiply cell size by row size in bytes
+    mflo $t0
+    add $t3, $t3, $t0 # $t3 = top left position of cell in number line in frame buffer + (cell size * cell number) + frame buffer address + (row size * 4) + (cell size * row size in bytes)
+
+    move $a0, $t3 # move frame buffer address of top left corner of cell position to $a0
+    move $a1, $s2 # move triangle color to $a1
+    li $a2, 1 # load direction of triangle (1 = up, -1 = down)
+    jal paint_triangle # paint triangle
+    j paint_pointer_end
+
+paint_pointer_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN paint_pointer
+
+# FUN paint_triangle
+# paints a triangle by row
+# ex:
+#         xxxxx
+#          xxx
+#           x
+# ARGS:
+# $a0: frame buffer address of top vertex of triangle
+# $a1: color of triangle
+# $a2: direction of triangle (1 = up, -1 = down)
+paint_triangle:
+    addi		$sp, $sp, -32			# $sp -= 32
+    sw			$s0, 28($sp)
+    sw			$s1, 24($sp)
+    sw			$s2, 20($sp)
+    sw			$s3, 16($sp)
+    sw			$s4, 12($sp)
+    sw			$s5, 8($sp)
+    sw			$s6, 4($sp)
+    sw			$ra, 0($sp)
+
+    move $s5, $a0
+    move $s6, $a2
+
+    li $s0, 0 # triangle row iterator
+    li $s1, 0 # left pointer of triangle
+    li $s2, 0 # right pointer of triangle
+paint_triangle_l1:
+    li $t0, 5 # height of the triangle
+    mult $s6, $t0 # multiply direction of triangle by height of triangle
+    mflo $t0
+    beq $s0, $t0, paint_triangle_end # end if triangle row iterator is equal to -5
+
+    move $s3, $s1 # copy left pointer of triangle to $s3
+    move $s4, $s2 # copy right pointer of triangle to $s4, need to restore later
+
+paint_triangle_row_l2:
+    bgt $s3, $s4, paint_triangle_row_l2_end # end row if left pointer of triangle is equal to right pointer of triangle
+    
+    sll $t0, $s3, 2 # multiply left pointer of triangle by 4 bytes
+    add $t1, $s5, $t0 # add left pointer of triangle to current frame buffer addressk
+    move $a0, $t1 # move frame buffer address to $a0
+    jal paint_pixel
+
+    sll $t0, $s4, 2 # multiply right pointer of triangle by 4 bytes
+    add $t1, $s5, $t0 # add right pointer of triangle to current frame buffer addressk
+    move $a0, $t1 # move frame buffer address to $a0
+    jal paint_pixel
+
+    addi $s3, $s3, 1 # increment left pointer of triangle
+    addi $s4, $s4, -1 # decrement right pointer of triangle
+    j paint_triangle_row_l2
+
+paint_triangle_row_l2_end:
+    add $s0, $s0, $a2 # increment triangle row iterator by direction of triangle
+    addi $s1, $s1, -1 # decrement left pointer of triangle
+    addi $s2, $s2, 1 # increment right pointer of triangle
+    lw $t0, ROW_SIZE_BYTES
+    mult $s6, $t0 # row size in bytes * direction of triangle
+    mflo $t0
+    add $s5, $s5, $t0 # decrement frame buffer address by row size in bytes
+    j paint_triangle_l1
+
+paint_triangle_end:
+    lw			$s0, 28($sp)
+    lw			$s1, 24($sp)
+    lw			$s2, 20($sp)
+    lw			$s3, 16($sp)
+    lw			$s4, 12($sp)
+    lw			$s5, 8($sp)
+    lw			$s6, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 32			# $sp += 32
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN paint_triangle
