@@ -567,6 +567,40 @@ calculate_number_line_position:
 # ██║     ╚██████╔╝██║██║ ╚████║   ██║   ███████╗██║  ██║███████║
 # ╚═╝      ╚═════╝ ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝
 
+# FUN init_pointers
+# Initializes the pointers to the top and bottom of the board.
+.globl init_pointers
+init_pointers:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $a0, TOP_POINTER_POSITION
+    li $a1, 1
+    lw $a2, WHITE
+    jal paint_pointer
+
+    lw $a0, BOTTOM_POINTER_POSITION
+    li $a1, -1
+    lw $a2, WHITE
+    jal paint_pointer
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN init_pointers
+
+
 # FUN paint_pointer
 # ARGS:
 # $a0: cell number that pointer is on (0-8)
