@@ -40,7 +40,11 @@
 2. The keys are as follows:
 
 l = move selected pointer right
+
 h = move selected pointer left
+
 k = select top pointer
+
 j = select bottom pointer
+
 ENTER = select number
