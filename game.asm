@@ -1,4 +1,21 @@
 .data
+    # Board ##############################
+.globl BOARD
+BOARD: .word  # 6x6 board of random numbers multiples of two numbers 1-9
+1, 2, 3, 4, 5, 6,
+7, 8, 9, 10, 12, 14,
+15, 16, 18, 20, 21, 24,
+25, 27, 28, 30, 32, 35,
+36, 40, 42, 45, 48, 49,
+54, 56, 63, 64, 72, 81
+.globl SELECTION_BOARD
+SELECTION_BOARD: .space 144 # 6x6 board of 1/0 where 1 = selected, 0 = not selected
+.globl BOARD_WIDTH_CELLS
+BOARD_WIDTH_CELLS: .word 6 # number of cells per row
+.globl BOARD_HEIGHT_CELLS
+BOARD_HEIGHT_CELLS: .word 6 # number of rows
+    ########################################
+
     # Game ###############################
 GAME_STATE: .word 0 # 0 = waiting for input, 1 = waiting on opponent, 2 = game over
 .globl SELECTED_POINTER
@@ -124,6 +141,139 @@ _paint_selected_pointer_end:
 
 # END FUN routine_update_display
 
+
+# ███████╗███████╗██╗     ███████╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗
+# ██╔════╝██╔════╝██║     ██╔════╝██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║
+# ███████╗█████╗  ██║     █████╗  ██║        ██║   ██║██║   ██║██╔██╗ ██║
+# ╚════██║██╔══╝  ██║     ██╔══╝  ██║        ██║   ██║██║   ██║██║╚██╗██║
+# ███████║███████╗███████╗███████╗╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║
+# ╚══════╝╚══════╝╚══════╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+
+# FUN make_board_selection
+# Makes a selection on the board at multiple of the numbers at the pointers.
+# If either pointer is unmoved, do nothing.
+# RETURN $v0: 
+# -2 if either pointer is unmoved or selection is invalid,
+# -1 if selection was already made,
+# 0 if selection was made successfully
+.globl make_board_selection
+make_board_selection:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    jal get_board_selection_of_curr_pointers
+    # $v0 = multiple of number at both pointers (pointer pos + 1), 0 if either pointer is unmoved
+    beq $v0, $zero, _make_board_select_unmoved_or_invalid # if either pointer is unmoved, do nothing
+
+    la $s0, BOARD
+    li $s1, 0 # index of board
+_make_board_selection_l1:
+    lw $t0, BOARD_WIDTH_CELLS
+    lw $t1, BOARD_HEIGHT_CELLS
+    mul $t0, $t0, $t1 # $t0 = number of cells in board
+    beq $s1, $t0, _make_board_select_unmoved_or_invalid # if reached end of board, selection is invalid
+
+    lw $t0, 0($s0) # $t0 = number at current index
+    beq $t0, $v0, _make_board_selection_idx_found # if number at current index == multiple of numbers at pointers, select number
+
+    addi $s0, $s0, 4 # increment board pointer
+    addi $s1, $s1, 1 # increment index
+    j _make_board_selection_l1
+
+_make_board_selection_idx_found:
+    la $s2, SELECTION_BOARD
+    sll $t0, $s1, 2 # $t0 = index * 4
+    add $s2, $s2, $t0 # $s2 = addr of selection board at index
+    lw $t0, 0($s2) # $t0 = value at selection board at index
+    beq $t0, 1, _make_board_selection_already_selected # if value at selection board at index == 1, selection was already made
+
+    li $t0, 1
+    sw $t0, 0($s2) # set value at selection board at index to 1
+
+    move $a0, $s1 # cell index
+    lw $a1, GREEN # background color
+    lw $a2, 0($s0) # cell value at index
+    jal paint_board_cell
+
+    li $v0, 0
+    j _make_board_selection_end
+
+_make_board_selection_already_selected:
+    li $v0, -1
+    j _make_board_selection_end
+
+_make_board_select_unmoved_or_invalid:
+    li $v0, -2
+    j _make_board_selection_end
+    
+_make_board_selection_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN make_board_selection
+
+# FUN get_board_selection_of_curr_pointers
+# Selects a number on the board at the current pointer position.
+# Returns 0 if either pointer is unmoved.
+# RETURN $v0: multiple of number at both pointers (pointer pos + 1), 0 if either pointer is unmoved
+get_board_selection_of_curr_pointers:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $t0, BOTTOM_POINTER_POSITION
+    addi $t0, $t0, 1 # add 1 to bottom pointer position
+    beq $t0, $zero, _pointer_unmoved # if bottom pointer is unmoved, return 0
+
+    lw $t1, TOP_POINTER_POSITION
+    addi $t1, $t1, 1
+    beq $t1, $zero, _pointer_unmoved # if top pointer is unmoved, return 0
+
+    mul $v0, $t0, $t1 # $v0 = bottom pointer position * top pointer position
+    j _get_board_selection_of_curr_pointers_end
+    
+_pointer_unmoved:
+    li $v0, 0
+    j _get_board_selection_of_curr_pointers_end
+
+_get_board_selection_of_curr_pointers_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN get_board_selection_of_curr_pointers
+
+
+# ██████╗  ██████╗ ██╗███╗   ██╗████████╗███████╗██████╗ 
+# ██╔══██╗██╔═══██╗██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗
+# ██████╔╝██║   ██║██║██╔██╗ ██║   ██║   █████╗  ██████╔╝
+# ██╔═══╝ ██║   ██║██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗
+# ██║     ╚██████╔╝██║██║ ╚████║   ██║   ███████╗██║  ██║
+# ╚═╝      ╚═════╝ ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
+#  █████╗  ██████╗████████╗██╗ ██████╗ ███╗   ██╗███████╗
+# ██╔══██╗██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║██╔════╝
+# ███████║██║        ██║   ██║██║   ██║██╔██╗ ██║███████╗
+# ██╔══██║██║        ██║   ██║██║   ██║██║╚██╗██║╚════██║
+# ██║  ██║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║███████║
+# ╚═╝  ╚═╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 
 # FUN select_top_pointer
 # Switches selected pointer to top pointer.
@@ -288,7 +438,6 @@ _decrement_selected_pointer_end:
     jr			$ra					# jump to $ra
 
 # END FUN increment_selected_pointer
-
 
 
 # FUN get_selected_pointer_addr

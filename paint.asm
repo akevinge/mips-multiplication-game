@@ -279,7 +279,7 @@ paint_board:
 
 paint_board_l1:
     move $a0, $s3 # move cell iterator to $a0
-    lw $s1, WHITE # load cell color
+    lw $a1, BACKGROUND_COLOR # load cell color
     lw $a2, 0($s5) # load number from board into $a5
     jal paint_board_cell # paint cell
 
@@ -296,6 +296,66 @@ paint_board_l1:
 
     jr			$ra					# jump to $ra
 
+
+# FUN paint_board_cell_background
+# Paints the background of a cell (excluding borders).
+# ARGS:
+# $a0: frame buffer address of top left corner to start painting from
+# $a1: cell background color
+paint_board_cell_background:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move $s0, $a0 # copy frame buffer address to $s0
+    move $s3, $a1 # copy cell background color to $s3
+
+    li $s1, 0 # initialize row index iterator to 0
+_paint_board_cell_background_l1: # iterate over each row
+    lw $t0, CELL_WIDTH
+    addi $t0, $t0, -1 # subtract 2 from cell width to skip border
+    beq $s1, $t0, _paint_board_cell_background_end # if row index iterator is equal to cell width - 2, jump to _paint_board_cell_background_l2
+
+    addi $s1, $s1, 1 # increment row index iterator
+
+    li $s2, 0 # initialize column index iterator to 0
+_paint_board_cell_background_l2:
+    lw $t0, CELL_HEIGHT
+    addi $t0, $t0, -1 # subtract 2 from cell height to skip border
+    beq $s2, $t0, _paint_board_cell_background_l1 # if column index iterator is equal to cell height - 2, jump to _paint_board_cell_background_l1
+
+    move $t0, $s2
+    sll $t0, $t0, 2 # column index * 4 = x offset in bytes
+
+    move $t1, $s1
+    lw $t2, ROW_SIZE_BYTES
+    mul $t1, $t2, $t1 # row index * row size in bytes = y offset in bytes
+
+    add $t3, $t0, $t1 # x offset + y offset = offset in bytes
+    add $t3, $t3, $s0 # frame buffer + offset
+
+    move $a0, $t3 # move frame buffer address to $a0
+    move $a1, $s3
+    jal paint_pixel
+
+    addi $s2, $s2, 1 # increment column index iterator
+    j _paint_board_cell_background_l2
+
+_paint_board_cell_background_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_board_cell_background
+
 .globl paint_board_cell
 paint_board_cell:
     ############################################
@@ -303,7 +363,7 @@ paint_board_cell:
     # paints a cell of the board
     # Each cell is 15px x 13px (including border).
     # $a0 = cell number (0-35)
-    # $a1 = cell color
+    # $a1 = cell background color
     # $a2 = cell value
     ############################################
     addi		$sp, $sp, -20			# $sp -= 20
@@ -314,6 +374,7 @@ paint_board_cell:
     sw			$ra, 0($sp)
 
     move $s1, $a2 # copy cell value to $s1
+    move $s2, $a1 # copy cell background color to $s2
 
     # $a0 = cell number (0-35)
     jal calculate_board_cell_position
@@ -323,6 +384,10 @@ paint_board_cell:
 
     move $a0, $s0
     jal paint_cell_borders
+
+    add $a0, $s0, 4 # move right one pixel to skip left border column
+    move $a1, $s2 # move cell background color to $a1
+    jal paint_board_cell_background
 
     move $a0, $s1 # move cell value to $a0
     move $a1, $s0 # move frame buffer address of top left corner of cell position to $a1

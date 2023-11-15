@@ -6,6 +6,7 @@ H_KEY: .word 0x00000068 # move selected pointer to the left
 K_KEY: .word 0x0000006B # select top pointer
 J_KEY: .word 0x0000006A # select bottom pointer
 Q_KEY: .word 0x00000071 # quit
+ENTER_KEY: .word 0x0000000A # enter
     #######################################
 
 .text
@@ -32,6 +33,12 @@ key_handler:
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
+
+_enter_key_case:
+    lw $t0, ENTER_KEY
+    bne $a0, $t0, _l_key_case
+    jal make_board_selection
+    j _key_handler_end
 
 _l_key_case:
     lw $t0, L_KEY
