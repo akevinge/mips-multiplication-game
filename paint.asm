@@ -948,7 +948,6 @@ paint_your_move:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    
     lw $s0, FRAME_BUFFER # $s0 = buffer address
     # Move buffer down 16 rows
     lw $t0, ROW_SIZE_BYTES
@@ -1016,3 +1015,98 @@ paint_your_move:
     jr			$ra					# jump to $ra
 
 # END FUN paint_your_move
+
+
+# FUN paint_invalid_move
+# Paints the text "INVALID MOVE" on the screen.
+.globl paint_invalid_move
+paint_invalid_move:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $s0, FRAME_BUFFER # $s0 = buffer address
+    # Move buffer down 16 rows
+    lw $t0, ROW_SIZE_BYTES
+    li $t1, 16
+    mul $t0, $t0, $t1
+    add $s0, $s0, $t0
+    addi $s0, $s0, 64 # move right 16 pixels
+
+    move $s2, $s0 # $s2 = leftmost pixel of text
+    lw $s1, RED # $s1 = color
+    
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_i
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_n
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_v
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_a
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_l
+
+    addi $s0, $s0, 16 # move right size of letter (3 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_i
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_d
+
+    # Reset frame buffer to top left corner
+    move $s0, $s2
+    # Move buffer down 9 rows for next line
+    lw $t0, ROW_SIZE_BYTES
+    li $t1, 9
+    mul $t0, $t0, $t1
+    add $s0, $s0, $t0
+
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_m
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_v
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_e
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_invalid_move
