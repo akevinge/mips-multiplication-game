@@ -8,6 +8,9 @@ WHITE:               .word   0xFFFFFFFF
 
 .globl GREEN
 GREEN:              .word   0x0000FF00
+
+.globl RED
+RED:                .word   0xFFFF0000
     #       
     # Colors ###################################
 

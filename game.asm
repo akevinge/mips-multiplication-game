@@ -17,7 +17,8 @@ BOARD_HEIGHT_CELLS: .word 6 # number of rows
     ########################################
 
     # Game ###############################
-GAME_STATE: .word 0 # 0 = waiting for input, 1 = waiting on opponent, 2 = game over
+.globl GAME_STATE
+GAME_STATE: .word 1 # 0 = player's turn, 1 = opponent's turn, 2 = game over
 .globl SELECTED_POINTER
 SELECTED_POINTER: .word 1 # pointer selected to be moved 1 = top pointer, -1 = bottom pointer
 .globl TOP_POINTER_POSITION
@@ -26,7 +27,7 @@ TOP_POINTER_POSITION: .word -1
 BOTTOM_POINTER_POSITION: .word -1
 TICK_STATE: .word 0 # state of tick which signals an update to the display
 PREV_TICK_STATE: .word 0 # previous state of tick which signals an update to the display
-TICKET_PERIOD_MS: .word 400 # period of tick which signals an update to the display
+TICK_PERIOD_MS: .word 400 # period of tick which signals an update to the display
     ########################################
 
 .text
@@ -49,9 +50,9 @@ game_loop:
 
 
 # FUN sleep
-# Sleeps for TICKET_PERIOD_MS
+# Sleeps for TICK_PERIOD_MS
 sleep:
-    lw $a0, TICKET_PERIOD_MS
+    lw $a0, TICK_PERIOD_MS
     li $v0, 32
     syscall
 
@@ -77,18 +78,9 @@ update_tick:
     lw $t0, 0($s0)
     sw $t0, 0($s1) # PREV_TICK_STATE = TICK_STATE
 
-    beq $t0, $zero, increment_tick # if TICK_STATE == 0, increment_tick
-decrement_tick:
-    addi $t0, $t0, -1
+    xor $t0, $t0, 1 # toggle TICK_STATE
     sw $t0, 0($s0)
-    j update_tick_end
 
-increment_tick:
-    addi $t0, $t0, 1
-    sw $t0, 0($s0)
-    j update_tick_end
-
-update_tick_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -194,11 +186,28 @@ _make_board_selection_idx_found:
     li $t0, 1
     sw $t0, 0($s2) # set value at selection board at index to 1
 
+    lw $t1, GAME_STATE
+    beq $t1, $zero, _make_board_selection_player # if GAME_STATE == 0, player made selection
+    
+_make_board_selection_opponent:
+    lw $a1, RED
+    j _make_board_selection_paint
+
+_make_board_selection_player:
+    lw $a1, GREEN
+
+_make_board_selection_paint:
     move $a0, $s1 # cell index
-    lw $a1, GREEN # background color
     lw $a2, 0($s0) # cell value at index
     jal paint_board_cell
 
+    # Toggle game state
+    la $t0, GAME_STATE
+    lw $t1, 0($t0)
+    xor $t1, $t1, 1
+    sw $t1, 0($t0)
+
+    # Return 0
     li $v0, 0
     j _make_board_selection_end
 
