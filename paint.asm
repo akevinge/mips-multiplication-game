@@ -11,8 +11,8 @@
 .data
     ###
     # Display ###########################
-LEFT_BOARD_OFFSET: .word 324 # offset of board from left edge of screen in bytes (4B = 1unit)
-LEFT_NUMBERLINE_OFFSET: .word 224 # offset of number line from left edge of screen in bytes (4B = 1unit)
+LEFT_BOARD_OFFSET: .word 364 # offset of board from left edge of screen in bytes (4B = 1unit)
+LEFT_NUMBERLINE_OFFSET: .word 264 # offset of number line from left edge of screen in bytes (4B = 1unit)
 FRAME_BUFFER:       .word   0x10040000                          # frame buffer address
 FRAME_BUFFER_SIZE:  .word   65536                               # 256x256 units
 ROW_SIZE_BYTES:    .word   1024                                 # 256units x 4B
@@ -822,3 +822,197 @@ paint_triangle_end:
     jr			$ra					# jump to $ra
 
 # END FUN paint_triangle
+
+
+# ████████╗███████╗██╗  ██╗████████╗
+# ╚══██╔══╝██╔════╝╚██╗██╔╝╚══██╔══╝
+#    ██║   █████╗   ╚███╔╝    ██║   
+#    ██║   ██╔══╝   ██╔██╗    ██║   
+#    ██║   ███████╗██╔╝ ██╗   ██║   
+#    ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   
+# FUN paint_opponent_move
+# Paints the text "OPPONENTS MOVE" on the screen.
+# ARGS: $a0: color
+.globl paint_opponent_move
+paint_opponent_move:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $s0, FRAME_BUFFER # $s0 = buffer address
+    # Move buffer down 16 rows
+    lw $t0, ROW_SIZE_BYTES
+    li $t1, 16
+    mul $t0, $t0, $t1
+    add $s0, $s0, $t0
+    addi $s0, $s0, 64 # move right 16 pixels
+
+    move $s2, $s0 # $s2 = leftmost pixel of text
+    move $s1, $a0 # $s1 = color
+    
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_p
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_p
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_n
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_e
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_n
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_t
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_s
+
+    # Reset frame buffer to top left corner
+    move $s0, $s2
+    # Move buffer down 9 rows for next line
+    lw $t0, ROW_SIZE_BYTES
+    li $t1, 9
+    mul $t0, $t0, $t1
+    add $s0, $s0, $t0
+
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_m
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_v
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_e
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_opponent_move
+
+# FUN paint_your_move
+# Paints the text "YOUR MOVE" on the screen.
+# ARGS:
+# $a0: color
+.globl paint_your_move
+paint_your_move:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    
+    lw $s0, FRAME_BUFFER # $s0 = buffer address
+    # Move buffer down 16 rows
+    lw $t0, ROW_SIZE_BYTES
+    li $t1, 16
+    mul $t0, $t0, $t1
+    add $s0, $s0, $t0
+    addi $s0, $s0, 64 # move right 16 pixels
+
+    move $s2, $s0 # $s2 = leftmost pixel of text
+    move $s1, $a0 # $s1 = color
+    
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_y
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_u
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_r
+
+    # Reset frame buffer to top left corner
+    move $s0, $s2
+    # Move buffer down 9 rows for next line
+    lw $t0, ROW_SIZE_BYTES
+    li $t1, 9
+    mul $t0, $t0, $t1
+    add $s0, $s0, $t0
+
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_m
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_v
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_e
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_your_move

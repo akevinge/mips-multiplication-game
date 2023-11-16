@@ -27,6 +27,9 @@ main:
 
     jal init_pointers
 
+    lw $a0, RED
+    jal paint_opponent_move
+
     jal game_loop
 
 .globl terminate

@@ -17,6 +17,7 @@ BOARD_HEIGHT_CELLS: .word 6 # number of rows
     ########################################
 
     # Game ###############################
+PREV_GAME_STATE: .word 0 # game state at previous tick
 .globl GAME_STATE
 GAME_STATE: .word 1 # 0 = player's turn, 1 = opponent's turn, 2 = game over
 .globl SELECTED_POINTER
@@ -35,6 +36,7 @@ TICK_PERIOD_MS: .word 400 # period of tick which signals an update to the displa
 .globl game_loop
 game_loop:
     jal update_tick
+    jal update_prev_game_state
 
     jal try_get_next_keypress
     # $v0 = keypress
@@ -92,6 +94,39 @@ update_tick:
 
 # END FUN update_tick
 
+# FUN update_prev_game_state
+# Saves previous game state every tick before it changes via key handler.
+# This is used by the routine display udate to determine if the game state text
+# needs to be updated.
+# ARGS:
+# $a0: arg1
+# $a1: arg2
+# $a2: arg3
+# RETURN $v0: 0
+update_prev_game_state:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    la $t0, PREV_GAME_STATE
+    lw $t1, GAME_STATE
+    sw $t1, 0($t0) # PREV_GAME_STATE = GAME_STATE
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN update_prev_game_state
+
 
 # FUN routine_update_display
 # Updates trivial display details (e.g. blinking pointers)
@@ -102,6 +137,29 @@ routine_update_display:
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
+
+    lw $t0, PREV_GAME_STATE
+    lw $t1, GAME_STATE
+    beq $t0, $t1, _blink_selected_pointer # if GAME_STATE == PREV_GAME_STATE, do nothing. skip to rest of subroutine.
+    # else, update game state text
+    beq $t1, $zero, _player_move_text # if GAME_STATE == 0, paint player move text
+
+_paint_opponent_move_text:
+    # Erase player move text
+    lw $a0, BACKGROUND_COLOR
+    jal paint_your_move
+
+    lw $a0, RED
+    jal paint_opponent_move
+    j _blink_selected_pointer
+
+_player_move_text:
+    # Erase opponent move text
+    lw $a0, BACKGROUND_COLOR
+    jal paint_opponent_move
+
+    lw $a0, GREEN
+    jal paint_your_move
 
 _blink_selected_pointer: # blink selected pointer by changing color depending on tick state
     lw $t0, TICK_STATE
