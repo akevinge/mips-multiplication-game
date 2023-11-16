@@ -9,7 +9,13 @@ BOARD: .word  # 6x6 board of random numbers multiples of two numbers 1-9
 36, 40, 42, 45, 48, 49,
 54, 56, 63, 64, 72, 81
 .globl SELECTION_BOARD
-SELECTION_BOARD: .space 144 # 6x6 board of 1/0 where 1 = selected, 0 = not selected
+SELECTION_BOARD: .word # 6x6 board where 1 = opponent selected, 0 = player selection, -1 = not selected
+-1, -1, -1, -1, -1, -1,
+-1, -1, -1, -1, -1, -1,
+-1, -1, -1, -1, -1, -1,
+-1, -1, -1, -1, -1, -1,
+-1, -1, -1, -1, -1, -1,
+-1, -1, -1, -1, -1, -1
 .globl BOARD_WIDTH_CELLS
 BOARD_WIDTH_CELLS: .word 6 # number of cells per row
 .globl BOARD_HEIGHT_CELLS
@@ -239,13 +245,13 @@ _make_board_selection_idx_found:
     sll $t0, $s1, 2 # $t0 = index * 4
     add $s2, $s2, $t0 # $s2 = addr of selection board at index
     lw $t0, 0($s2) # $t0 = value at selection board at index
-    beq $t0, 1, _make_board_selection_already_selected # if value at selection board at index == 1, selection was already made
+    li $t1, -1
+    bne $t0, $t1, _make_board_selection_already_selected # if value at selection board at index != 1, selection was already made
 
-    li $t0, 1
-    sw $t0, 0($s2) # set value at selection board at index to 1
+    lw $t0, GAME_STATE
+    sw $t0, 0($s2) # set SELECTION_BOARD at index to GAME_STATE (0 = player's turn, 1 = opponent's turn) 
 
-    lw $t1, GAME_STATE
-    beq $t1, $zero, _make_board_selection_player # if GAME_STATE == 0, player made selection
+    beq $t0, $zero, _make_board_selection_player # if GAME_STATE == 0, player made selection
     
 _make_board_selection_opponent:
     lw $a1, RED
