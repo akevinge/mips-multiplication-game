@@ -843,7 +843,7 @@ paint_opponent_move:
     sw			$ra, 0($sp)
 
     lw $s0, FRAME_BUFFER # $s0 = buffer address
-    # Move buffer down 16 rows
+    # Move buffer down 32 rows
     lw $t0, ROW_SIZE_BYTES
     li $t1, 16
     mul $t0, $t0, $t1
@@ -1019,6 +1019,8 @@ paint_your_move:
 
 # FUN paint_invalid_move
 # Paints the text "INVALID MOVE" on the screen.
+# ARGS:
+# $a0: color
 .globl paint_invalid_move
 paint_invalid_move:
     addi		$sp, $sp, -20			# $sp -= 20
@@ -1031,13 +1033,13 @@ paint_invalid_move:
     lw $s0, FRAME_BUFFER # $s0 = buffer address
     # Move buffer down 16 rows
     lw $t0, ROW_SIZE_BYTES
-    li $t1, 16
+    li $t1, 36
     mul $t0, $t0, $t1
     add $s0, $s0, $t0
     addi $s0, $s0, 64 # move right 16 pixels
 
     move $s2, $s0 # $s2 = leftmost pixel of text
-    lw $s1, RED # $s1 = color
+    move $s1, $a0 # $s1 = color
     
     move $a0, $s0
     move $a1, $s1

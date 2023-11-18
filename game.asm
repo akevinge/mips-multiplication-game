@@ -45,12 +45,25 @@ game_loop:
     jal update_prev_game_state
 
     jal try_get_next_keypress
-    # $v0 = keypress
-    move $a0, $v0
+    move $s0, $v0 # $s0 = keypress
+
+    move $a0, $s0
+    jal check_terminate_key
+
+    lw $t0, GAME_STATE
+    bnez $t0, _game_loop_opponent # if GAME_STATE != 0, opponent's turn
+    
+_game_loop_player:
+    move $a0, $s0 # $a0 = keypress
     jal key_handler
+    j _game_loop_end
 
+_game_loop_opponent:
+    jal opponent_select_move
+    j _game_loop_end
+
+_game_loop_end:
     jal routine_update_display
-
     jal sleep
     j game_loop
 
@@ -100,6 +113,36 @@ update_tick:
 
 # END FUN update_tick
 
+
+# FUN toggle_game_state
+# Toggles game state between 0 and 1.
+.globl toggle_game_state
+toggle_game_state:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    la $s0, GAME_STATE
+    lw $t0, 0($s0)
+    xor $t0, $t0, 1 # toggle GAME_STATE
+    sw $t0, 0($s0)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN toggle_game_state
+
+
 # FUN update_prev_game_state
 # Saves previous game state every tick before it changes via key handler.
 # This is used by the routine display udate to determine if the game state text
@@ -108,7 +151,6 @@ update_tick:
 # $a0: arg1
 # $a1: arg2
 # $a2: arg3
-# RETURN $v0: 0
 update_prev_game_state:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
@@ -128,7 +170,6 @@ update_prev_game_state:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
 # END FUN update_prev_game_state
@@ -264,12 +305,6 @@ _make_board_selection_paint:
     move $a0, $s1 # cell index
     lw $a2, 0($s0) # cell value at index
     jal paint_board_cell
-
-    # Toggle game state
-    la $t0, GAME_STATE
-    lw $t1, 0($t0)
-    xor $t1, $t1, 1
-    sw $t1, 0($t0)
 
     # Return 0
     li $v0, 0
@@ -431,27 +466,8 @@ increment_selected_pointer:
     sw			$ra, 0($sp)
 
     jal get_selected_pointer_position
-    li $t0, 8
-    beq $v0, $t0, _increment_selected_pointer_end # if selected pointer is at rightmost position, do nothing
-
-    jal get_selected_pointer_position
-    move $s0, $v0 # save selected pointer position
-
-    # Erase previous selected pointer position.
-    move $a0, $s0
-    lw $a1, SELECTED_POINTER
-    lw $a2, BACKGROUND_COLOR
-    jal paint_pointer
-
-    # Increment selected pointer position
-    jal get_selected_pointer_addr
-    addi $s0, $s0, 1 # increment selected pointer position
-    sw $s0, 0($v0) # save incremented selected pointer position
-
-    move $a0, $s0
-    lw $a1, SELECTED_POINTER
-    lw $a2, WHITE
-    jal paint_pointer
+    addi $a0, $v0, 1 # $a0 = selected pointer position + 1
+    jal set_selected_pointer
 
 _increment_selected_pointer_end:
     lw			$s0, 16($sp)
@@ -478,29 +494,11 @@ decrement_selected_pointer:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
-    jal get_selected_pointer_position
-    ble $v0, $zero, _decrement_selected_pointer_end # if selected pointer is at leftmost position, do nothing
 
     jal get_selected_pointer_position
-    move $s0, $v0 # save selected pointer position
+    addi $a0, $v0, -1 # $a0 = selected pointer position - 1
+    jal set_selected_pointer
 
-    # Erase previous selected pointer position.
-    move $a0, $s0
-    lw $a1, SELECTED_POINTER
-    lw $a2, BACKGROUND_COLOR
-    jal paint_pointer
-
-    # Increment selected pointer position
-    jal get_selected_pointer_addr
-    addi $s0, $s0, -1 # increment selected pointer position
-    sw $s0, 0($v0) # save incremented selected pointer position
-
-    move $a0, $s0
-    lw $a1, SELECTED_POINTER
-    lw $a2, WHITE
-    jal paint_pointer
-
-_decrement_selected_pointer_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -511,6 +509,62 @@ _decrement_selected_pointer_end:
     jr			$ra					# jump to $ra
 
 # END FUN increment_selected_pointer
+
+
+# FUN set_selected_pointer
+# ARGS:
+# $a0: position to set selected pointer
+# RETURN:
+# $v0: 0 if position is valid, -1 if position is invalid
+set_selected_pointer:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    move $s0, $a0 # save position to set selected pointer
+
+    li $t0, 8
+    bgt $a0, $t0, _set_selected_pointer_invalid
+    blt $a0, $zero, _set_selected_pointer_invalid
+
+    # Erase previous selected pointer position.
+    jal get_selected_pointer_position
+    move $a0, $v0 # $a0 = previous selected pointer position
+    lw $a1, SELECTED_POINTER
+    lw $a2, BACKGROUND_COLOR
+    jal paint_pointer
+
+    # Increment selected pointer position
+    jal get_selected_pointer_addr
+    sw $s0, 0($v0) # save incremented selected pointer position
+
+    # Paint new selected pointer position
+    move $a0, $s0
+    lw $a1, SELECTED_POINTER
+    lw $a2, WHITE
+    jal paint_pointer
+
+    li $v0, 0 # return 0
+    j _set_selected_pointer_end
+
+_set_selected_pointer_invalid:
+    li $v0, -1
+    j _set_selected_pointer_end
+
+_set_selected_pointer_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN set_selected_pointer
 
 
 # FUN get_selected_pointer_addr
@@ -572,3 +626,124 @@ get_selected_pointer_position:
     jr			$ra					# jump to $ra
 
 # END FUN get_selected_pointer_position
+
+#  ██████╗ ██████╗ ██████╗  ██████╗ ███╗   ██╗███████╗███╗   ██╗████████╗
+# ██╔═══██╗██╔══██╗██╔══██╗██╔═══██╗████╗  ██║██╔════╝████╗  ██║╚══██╔══╝
+# ██║   ██║██████╔╝██████╔╝██║   ██║██╔██╗ ██║█████╗  ██╔██╗ ██║   ██║   
+# ██║   ██║██╔═══╝ ██╔═══╝ ██║   ██║██║╚██╗██║██╔══╝  ██║╚██╗██║   ██║   
+# ╚██████╔╝██║     ██║     ╚██████╔╝██║ ╚████║███████╗██║ ╚████║   ██║   
+#  ╚═════╝ ╚═╝     ╚═╝      ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═══╝   ╚═╝   
+
+# FUN opponent_select_move
+# Selects a valid move for the opponent.
+opponent_select_move:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Check if bottom pointer position is unmoved
+    lw $t0, BOTTOM_POINTER_POSITION
+    li $t1, -1
+    bne $t0, $t1, _opponent_select_move_l1
+
+    # If bottom pointer position is unmoved, select bottom pointer
+    jal select_bottom_pointer
+
+    # Generate random number from 0-8 (inclusive)
+    li $a0, 1
+    li $a1, 9 # Range for random number is 0-8 (inclusive)
+    li $v0, 42 # syscall code for random number
+    syscall
+
+    # $a0 = random number
+    jal set_selected_pointer
+    # Player will obviously want to move top pointer because it's still at -1.
+    jal select_top_pointer
+    j _opponent_select_move_end
+
+_opponent_select_move_l1:
+    # Get random number from 0-35 (inclusive)
+    li $a0, 1
+    li $a1, 36 # Range for random number is 0-35 (inclusive)
+    li $v0, 42 # syscall code for random number
+    syscall
+    move $t1, $a0 # $t1 = random number
+
+    # Load the selection status of the cell
+    la $t2, SELECTION_BOARD
+    sll $t0, $t1, 2 # $t0 = random number * 4
+    add $t2, $t2, $t0 # $t2 = addr of selection board at random number
+    lw $t3, 0($t2) # $t0 = value at selection board at random number
+
+    # If cell was already selected, try again
+    li $t1, -1
+    bne $t3, $t1, _opponent_select_move_l1
+
+    # Load the board
+    la $t2, BOARD
+    add $t2, $t2, $t0 # $t2 = addr of board at random number
+    lw $t3, 0($t2) # $t3 = value at board at random number
+    move $a0, $t3
+    li $v0,1 
+    syscall
+    jal print_newline
+
+    lw $t2, BOTTOM_POINTER_POSITION
+    addi $t2, $t2, 1 # $t2 = bottom pointer position + 1
+    div $t3, $t2 # $t3 = value at board at random number / bottom pointer position + 1
+    mfhi $t4 # $t4 = remainder of division
+    mflo $s0 # $s0 = quotient of division
+    
+    li $t0, 9
+    bge $s0, $t0, _check_top_pointer # if quotient of division >= 9, try other pointer
+    
+    beqz $t4, _opponent_select_move_top_pointer # if remainder of division == 0, select top pointer
+
+_check_top_pointer:
+    # Check divisibility with top pointer position
+    lw $t2, TOP_POINTER_POSITION
+    addi $t2, $t2, 1 # $t2 = top pointer position + 1
+    div $t3, $t2 # $t3 = value at board at random number / top pointer position + 1
+    mfhi $t4 # $t4 = remainder of division
+    mflo $s0 # $s0 = quotient of division
+
+    li $t0, 9
+    bge $s0, $t0, _opponent_select_move_l1 # if quotient of division >= 9, try again
+    beqz $t4, _opponent_select_move_bottom_pointer # if remainder of division == 0, select bottom pointer
+
+    j _opponent_select_move_l1 # else, try again
+
+_opponent_select_move_top_pointer:
+    jal select_top_pointer
+    addi $a0, $s0, -1 # $a0 = quotient of division - 1 (0-indexed)
+    jal set_selected_pointer
+    jal make_board_selection
+    j _opponent_select_move_end
+
+_opponent_select_move_bottom_pointer:
+    jal select_bottom_pointer
+    addi $a0, $s0, -1 # $a0 = quotient of division - 1 (0-indexed)
+    jal set_selected_pointer
+    jal make_board_selection
+    j _opponent_select_move_end
+
+
+_opponent_select_move_end:
+    move $a0, $s0
+    li $v0,1 
+    syscall
+    jal print_newline
+    jal toggle_game_state
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN opponent_select_move

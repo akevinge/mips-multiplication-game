@@ -37,7 +37,7 @@ key_handler:
 _enter_key_case:
     lw $t0, ENTER_KEY
     bne $a0, $t0, _l_key_case
-    jal make_board_selection
+    jal selection_handler
     j _key_handler_end
 
 _l_key_case:
@@ -65,9 +65,8 @@ _j_key_case:
     j _key_handler_end
 
 _q_key_case:
-    lw $t0, Q_KEY
-    bne $a0, $t0, _key_handler_end
-    j terminate
+    # $a0 = hex value of key pressed
+    jal check_terminate_key
     
 _key_handler_end:
     lw			$s0, 16($sp)
@@ -81,3 +80,72 @@ _key_handler_end:
     jr			$ra					# jump to $ra
 
 # END FUN key_handler
+
+
+# FUN selection_handler
+selection_handler:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    jal make_board_selection
+    bnez $v0, _selection_handler_invalid
+
+_selection_handler_valid:
+    # Erase invalid move text
+    lw $a0, BACKGROUND_COLOR
+    jal paint_invalid_move
+
+    jal toggle_game_state
+    j _selection_handler_end
+
+_selection_handler_invalid:
+    # Display invalid move text
+    lw $a0, RED
+    jal paint_invalid_move
+
+_selection_handler_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN selection_handler
+
+
+# FUN check_terminate_key
+# ARGS:
+# $a0: hex value of key pressd
+.globl check_terminate_key
+check_terminate_key:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $t0, Q_KEY
+    bne $a0, $t0, _check_terminate_key_end
+    j terminate
+
+_check_terminate_key_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    move 		$v0, $zero			# $v0 = $zero
+    jr			$ra					# jump to $ra
+
+# END FUN check_terminate_key
