@@ -23,6 +23,7 @@ main:
 
     jal paint_board
 
+    lw $a0, WHITE
     jal paint_numberline
 
     jal init_pointers

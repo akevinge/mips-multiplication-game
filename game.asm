@@ -26,6 +26,8 @@ BOARD_HEIGHT_CELLS: .word 6 # number of rows
 PREV_GAME_STATE: .word 0 # game state at previous tick
 .globl GAME_STATE
 GAME_STATE: .word 1 # 0 = player's turn, 1 = opponent's turn, 2 = game over
+.globl LAST_SELECTED_CELL_IDX # 0-35 index of selected cell in SELECTION_BOARD
+LAST_SELECTED_CELL_IDX: .word -1 
 .globl SELECTED_POINTER
 SELECTED_POINTER: .word 1 # pointer selected to be moved 1 = top pointer, -1 = bottom pointer
 .globl TOP_POINTER_POSITION
@@ -51,21 +53,82 @@ game_loop:
     jal check_terminate_key
 
     lw $t0, GAME_STATE
-    bnez $t0, _game_loop_opponent # if GAME_STATE != 0, opponent's turn
+    beq $t0, $zero, _game_loop_player # if GAME_STATE == 0, player's turn
     
-_game_loop_player:
-    move $a0, $s0 # $a0 = keypress
-    jal key_handler
-    j _game_loop_end
+    li $t1, 2
+    beq $t0, $t1, _game_loop_over # if GAME_STATE == 2, game over
+
 
 _game_loop_opponent:
     jal opponent_select_move
     j _game_loop_end
 
+_game_loop_player:
+    move $a0, $s0 # $a0 = keypress
+    jal key_handler
+    j _game_loop_end
+
 _game_loop_end:
+    jal check_win
+    lw $t0, GAME_STATE
+    li $t1, 2
+    beq $t0, $t1, _game_loop_over # if GAME_STATE == 2, game over
+
     jal routine_update_display
     jal sleep
     j game_loop
+
+_game_loop_over:
+    # Erase player move text
+    lw $a0, BACKGROUND_COLOR
+    jal paint_your_move
+
+    lw $a0, RED
+    jal paint_opponent_move
+
+    # Erase opponent move text
+    lw $a0, BACKGROUND_COLOR
+    jal paint_opponent_move
+
+    # Erase invalid move text
+    lw $a0, BACKGROUND_COLOR
+    jal paint_invalid_move 
+
+    # Erase number line
+    lw $a0, BACKGROUND_COLOR
+    jal paint_numberline
+
+    # Erase top pointer
+    lw $a0, TOP_POINTER_POSITION
+    li $a1, 1
+    lw $a2, BACKGROUND_COLOR
+    jal paint_pointer
+
+    # Erase bottom pointer
+    lw $a0, BOTTOM_POINTER_POSITION
+    li $a1, -1
+    lw $a2, BACKGROUND_COLOR
+    jal paint_pointer
+
+
+    lw $t0, PREV_GAME_STATE # game state of last player
+    beqz $t0, _game_loop_player_wins # if PREV_TICK_STATE == 0, player wins 
+    # else, opponent wins
+
+    lw $a0, RED
+    jal paint_you_lose
+    j _game_loop_terminate
+
+_game_loop_player_wins:
+    # Paint you win text
+    lw $a0, GREEN
+    jal paint_you_win
+
+_game_loop_terminate:
+    li $a0, 10000 # sleep for 10s
+    li $v0, 32
+    syscall
+    j terminate
 
 # END FUN game_loop
 
@@ -80,6 +143,216 @@ sleep:
     jr $ra
 
 # END FUN sleep
+
+
+# FUN check_win_diag
+# ARGS:
+# $a0: row to check
+# $a1: column to check
+# $a2: row delta (direction to traverse in)
+# $a3: column delta
+# RETURN:
+# $v0: total counter
+check_win_diag:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    blt $a0, $zero, _check_win_diag_0 # if row < 0, return 0
+    blt $a1, $zero, _check_win_diag_0 # if column < 0, return 0
+    lw $t0, BOARD_WIDTH_CELLS
+    bge $a0, $t0, _check_win_diag_0 # if row >= SIZE, return 0
+    bge $a1, $t0, _check_win_diag_0 # if column >= SIZE, return 0
+
+    move $s0, $a0
+    move $s1, $a1
+    move $s2, $a2
+    move $s3, $a3
+    # $a0 = row to check
+    # $a1 = column to check
+    jal coord_to_index # (row, column) -> cell index
+    move $t3, $v0 # $t3 = cell index
+    sll $t1, $t3, 2 # index = cell index * 4
+
+    la $t0, SELECTION_BOARD
+    add $t0, $t0, $t1 # addr = addr + index
+    lw $t0, 0($t0) # $t0 = selection value
+
+    lw $t1, PREV_GAME_STATE
+    bne $t0, $t1, _check_win_diag_0 # if PREV_GAME_STATE != selection value, return 0
+    # else, continue going in same direction
+
+    add $a0, $s0, $s2 # arg1 = row + row delta
+    add $a1, $s1, $s3 # arg2 = col + col delta
+    move $a2, $s2
+    move $a3, $s3
+    jal check_win_diag
+    addi $v0, $v0, 1 # return = return + 1
+    j _check_win_diag_end
+
+_check_win_diag_0:
+    li $v0, 0
+    j _check_win_diag_end
+
+_check_win_diag_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END check_win_diag
+
+
+# FUN check_win
+# Checks the for the win condition of the current player.
+# RETURN:
+# $v0: -1 if no one wins, 0 if player wins, 1 if opponent wins
+check_win:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    # Calculate row and column of last selected index
+    # $s0 = last selected row
+    # $s1 = last selected column
+    # $s2 = last player to select a move
+    lw $t0, LAST_SELECTED_CELL_IDX
+    blt $t0, $zero, _check_win_none # if LAST_SELECTED_CELL_IDX < 0, no move yet, no one wins
+    move $a0, $t0
+    jal index_to_coord
+    move $s0, $v0
+    move $s1, $v1
+    lw $s2, PREV_GAME_STATE
+  
+    # Check last selected row
+    li $s3, 0 # $s3 = column iterator
+    li $s4, 0 # $s4 = current total cells in a row
+_check_win_row:
+    lw $t0, BOARD_WIDTH_CELLS
+    beq $s3, $t0, _check_win_row_end
+
+    mul $t0, $t0, $s0 # $t0 = index of first cell in row = BOARD_WIDTH_CELLS * ROW
+    add $t0, $s3, $t0 # first cell in row + iterator
+    sll $t0, $t0, 2 # index of cell to check = (first cell + iterator) * 4
+    
+    la $t1, SELECTION_BOARD
+    add $t1, $t1, $t0 # addr + index of cell 
+    lw $t0, 0($t1) # $t0 = player who last selected cell
+
+    addi $s3, $s3, 1 # column iterator++
+    bne $t0, $s2, _check_win_row_reset # if value at cell != current player, reset counter
+
+    addi $s4, $s4, 1 # total cell count++
+    li $t0, 4
+    beq $s4, $t0, _check_win_won # if total cell count == 4, game over
+    j _check_win_row
+    
+_check_win_row_reset:
+    li $s4, 0 # reset total cells back to 0
+    j _check_win_row
+
+_check_win_row_end:
+
+    # Check last selected column
+    li $s3, 0 # $s3 = row iterator
+    li $s4, 0 # $s4 = current total cells in a column
+_check_win_col:
+    lw $t0, BOARD_WIDTH_CELLS
+    beq $s3, $t0, _check_win_col_end
+
+    mul $t0, $t0, $s3 # $t0 = row iterator * SIZE 
+    add $t0, $t0, $s1 # $t0 = row iterator * SIZE + selected column
+    sll $t0, $t0, 2 # index of cell to check = (first cell + iterator) * 4
+    
+    la $t1, SELECTION_BOARD
+    add $t1, $t1, $t0 # addr + index of cell 
+    lw $t0, 0($t1) # $t0 = player who last selected cell
+
+    addi $s3, $s3, 1 # column iterator++
+    bne $t0, $s2, _check_win_col_reset # if value at cell != current player, reset counter
+
+    addi $s4, $s4, 1 # total cell count++
+    li $t0, 4
+    beq $s4, $t0, _check_win_won # if total cell count == 4, game over
+    j _check_win_col
+    
+_check_win_col_reset:
+    li $s4, 0 # reset total cells back to 0
+    j _check_win_col
+    
+_check_win_col_end:
+_check_win_diag:
+    # Check upper left
+    addi $a0, $s0, -1
+    addi $a1, $s1, -1
+    li $a2, -1
+    li $a3, -1
+    jal check_win_diag
+    move $s4, $v0
+
+    # Check lower right
+    addi $a0, $s0, 1
+    addi $a1, $s1, 1
+    li $a2, 1
+    li $a3, 1
+    jal check_win_diag
+    add $s4, $s4, $v0
+
+    li $t0, 3
+    beq $s4, $t0, _check_win_won # if sum of upper left + lower right diagonals == 3 (excluding self), game over
+
+    # Check upper right
+    addi $a0, $s0, 1
+    addi $a1, $s1, -1
+    li $a2, 1
+    li $a3, -1
+    jal check_win_diag
+    move $s4, $v0
+
+    # Check lower left
+    addi $a0, $s0, -1
+    addi $a1, $s1, 1
+    li $a2, -1
+    li $a3, 1
+    jal check_win_diag
+    add $s4, $s4, $v0
+
+    li $t0, 3
+    beq $s4, $t0, _check_win_won # if sum of upper right + lower left diagonals == 3 (excluding self), game over
+
+    j _check_win_none
+
+_check_win_won: # last player to select wins
+    move $v0, $s2 # RETURN $v0 = last player (PREV_GAME_STATE)
+    la $t0, GAME_STATE # Set game state to GAME OVER (2)
+    li $t1, 2
+    sw $t1, 0($t0)
+    j _check_win_end
+_check_win_none: # no one wins
+    li $v0, -1
+    j _check_win_end
+
+_check_win_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN check_in
 
 
 # FUN update_tick
@@ -289,6 +562,9 @@ _make_board_selection_idx_found:
     li $t1, -1
     bne $t0, $t1, _make_board_selection_already_selected # if value at selection board at index != 1, selection was already made
 
+    la $t0, LAST_SELECTED_CELL_IDX # save last move, used for checking win condition
+    sw $s1, 0($t0)
+
     lw $t0, GAME_STATE
     sw $t0, 0($s2) # set SELECTION_BOARD at index to GAME_STATE (0 = player's turn, 1 = opponent's turn) 
 
@@ -412,7 +688,6 @@ select_top_pointer:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
 # END FUN select_top_pointer
@@ -447,7 +722,6 @@ select_bottom_pointer:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
 # END FUN select_bottom_pointer
@@ -686,10 +960,6 @@ _opponent_select_move_l1:
     la $t2, BOARD
     add $t2, $t2, $t0 # $t2 = addr of board at random number
     lw $t3, 0($t2) # $t3 = value at board at random number
-    move $a0, $t3
-    li $v0,1 
-    syscall
-    jal print_newline
 
     lw $t2, BOTTOM_POINTER_POSITION
     addi $t2, $t2, 1 # $t2 = bottom pointer position + 1
@@ -732,10 +1002,6 @@ _opponent_select_move_bottom_pointer:
 
 
 _opponent_select_move_end:
-    move $a0, $s0
-    li $v0,1 
-    syscall
-    jal print_newline
     jal toggle_game_state
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)

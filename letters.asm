@@ -1056,6 +1056,90 @@ paint_v:
 # END FUN paint_v
 
 
+# FUN paint_w
+# ARGS:
+# $a0 = buffer address
+# $a1 = color
+.globl paint_w
+paint_w:
+    addi		$sp, $sp, -4
+    sw			$ra, 0($sp)
+
+    move $a2, $a0
+    move $a3, $a1
+
+    li      $a0, 1
+    li      $a1, 3
+    jal     paint_pixel_relative
+
+    li      $a0, 1
+    li      $a1, 2
+    jal     paint_pixel_relative
+
+    li      $a0, 1
+    li      $a1, 1
+    jal     paint_pixel_relative
+
+    li      $a0, 1
+    li      $a1, 0
+    jal     paint_pixel_relative
+
+    li      $a0, 1
+    li      $a1, -1
+    jal     paint_pixel_relative
+
+    li      $a0, 1
+    li      $a1, -2
+    jal     paint_pixel_relative
+
+    li      $a0, 1
+    li      $a1, -3
+    jal     paint_pixel_relative
+
+    li      $a0, 0
+    li      $a1, -2
+    jal     paint_pixel_relative
+
+    li      $a0, -1
+    li      $a1, -2
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, 3
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, 2
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, 1
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, 0
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, -1
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, -2
+    jal     paint_pixel_relative
+
+    li      $a0, -2
+    li      $a1, -3
+    jal     paint_pixel_relative
+
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 4			# $sp += 4
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_w
+
+
 # FUN paint_y
 # ARGS:
 # $a0 = buffer address

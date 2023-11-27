@@ -98,6 +98,7 @@ paint_pixel_relative:
 # ARGS:
 # $a0: cell number
 # $a1: frame buffer address of cell center
+# $a2: color
 paint_cell_number:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
@@ -119,12 +120,12 @@ paint_cell_number:
     mult $t2, $t0
     mflo $t2
 
-    add $s0, $a1, $t1
-    add $s0, $s0, $t2 # $s0 = frame buffer address of cell center
+    add $t3, $a1, $t1
+    add $t3, $t3, $t2 # $t3 = frame buffer address of cell center
 
     # $a0 = cell number
-    move $a1, $s0 # move frame buffer address of cell center to $a1
-    lw $a2, WHITE # load cell color
+    move $a1, $t3 # move frame buffer address of cell center to $a1
+    # $a2 = cell color
     jal paint_number  # paint cell number
 
     lw			$s0, 16($sp)
@@ -143,6 +144,7 @@ paint_cell_number:
 # FUN paint_cell_borders
 # ARGS:
 # $a0: frame buffer address of top left corner of cell position
+# $a1: color
 paint_cell_borders:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
@@ -152,11 +154,12 @@ paint_cell_borders:
     sw			$ra, 0($sp)
 
     move $s0, $a0 # copy frame buffer address to $s0
+    move $s2, $a1
 
     li $s1, 0 # initialize pixel index iterator to 0
 top_border_l1:
     move $a0, $s0 # move frame buffer address to $a0
-    lw $a1, WHITE # load border color
+    move $a1, $s2 # load border color
     jal paint_pixel
 
     addi $s0, $s0, 4 # increment frame buffer address by 4 bytes
@@ -168,7 +171,7 @@ top_border_l1:
     # $s5 = frame buffer address of top right corner of cell
 right_border_l1:
     move $a0, $s0 # move frame buffer address to $a0
-    lw $a1, WHITE # load border color
+    move $a1, $s2 # load border color
     jal paint_pixel
 
     lw $t0, ROW_SIZE_BYTES
@@ -181,7 +184,7 @@ right_border_l1:
     # $s5 = frame buffer address of bottom right corner of cell
 bottom_border_l1:
     move $a0, $s0 # move frame buffer address to $a0
-    lw $a1, WHITE # load border color
+    move $a1, $s2 # load border color
     jal paint_pixel
 
     addi $s0, $s0, -4 # decrement frame buffer address by 4 bytes
@@ -193,7 +196,7 @@ bottom_border_l1:
     # $s5 = frame buffer address of bottom left corner of cell
 left_border_l1:
     move $a0, $s0 # move frame buffer address to $a0
-    lw $a1, WHITE # load border color
+    move $a1, $s2 # load border color
     jal paint_pixel
 
     lw $t0, NEG_ROW_SIZE_BYTES
@@ -383,6 +386,7 @@ paint_board_cell:
     add $s0, $t0, $v0 # add top left cell position in bytes to frame buffer address
 
     move $a0, $s0
+    lw $a1, WHITE
     jal paint_cell_borders
 
     add $a0, $s0, 4 # move right one pixel to skip left border column
@@ -391,6 +395,7 @@ paint_board_cell:
 
     move $a0, $s1 # move cell value to $a0
     move $a1, $s0 # move frame buffer address of top left corner of cell position to $a1
+    lw $a2, WHITE
     jal paint_cell_number
 
     lw			$s0, 16($sp)
@@ -476,6 +481,8 @@ calculate_board_cell_position:
 # ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝
                                                                                    
 # FUN paint_numberline
+# ARGS:
+# $a0: color
 .globl paint_numberline
 paint_numberline:
     addi		$sp, $sp, -20			# $sp -= 20
@@ -484,11 +491,12 @@ paint_numberline:
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
-
+    
+    move $s0, $a0
     li $s3, 0 # initialize cell iterator to 0
 paint_numberline_l1:
     move $a0, $s3
-    lw $a1, WHITE
+    move $a1, $s0
     jal paint_numberline_cell_number
     
     addi $s3, $s3, 1 # increment cell iterator
@@ -521,6 +529,7 @@ paint_numberline_cell_number:
     sw			$ra, 0($sp)
 
     move $s1, $a0 # copy cell value to $s1
+    move $s3, $a1
 
     # $a0 = cell number (0-35)
     jal calculate_numberline_cell_position
@@ -529,10 +538,12 @@ paint_numberline_cell_number:
     add $s0, $t0, $v0 # add top left cell position in bytes to frame buffer address
 
     move $a0, $s0
+    move $a1, $s3
     jal paint_cell_borders
 
     addi $a0, $s1, 1 # move cell value + 1 to $a0
     move $a1, $s0 # move frame buffer address of top left corner of cell position to $a1
+    move $a2, $s3
     jal paint_cell_number
 
     lw			$s0, 16($sp)
@@ -739,7 +750,6 @@ paint_pointer_end:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 20			# $sp += 20
 
-    move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
 # END FUN paint_pointer
@@ -818,7 +828,6 @@ paint_triangle_end:
     lw			$ra, 0($sp)
     addi		$sp, $sp, 32			# $sp += 32
 
-    move 		$v0, $zero			# $v0 = $zero
     jr			$ra					# jump to $ra
 
 # END FUN paint_triangle
@@ -1112,3 +1121,137 @@ paint_invalid_move:
     jr			$ra					# jump to $ra
 
 # END FUN paint_invalid_move
+
+
+# FUN paint_you_win
+# Paints the text "YOU WIN" on the screen.
+# Paints it at number line position
+# ARGS:
+# $a0: color
+.globl paint_you_win
+paint_you_win:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    jal calculate_number_line_position # calculate top left position of number line in frame buffer
+    move $t0, $v0 # copy top left position of number line in frame buffer to $s0
+    lw $s0, FRAME_BUFFER
+    add $s0, $s0, $t0
+    # Move buffer down 4 rows
+    addi $s0, $s0, 1260 # move right 320 pixels
+
+    move $s2, $s0 # $s2 = leftmost pixel of text
+    move $s1, $a0 # $s1 = color
+    
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_y
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_u
+
+    addi $s0, $s0, 28 # move right size of letter (4 pixels) + 3 pixels for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_w
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_i
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_n
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_you_win
+
+
+# FUN paint_you_lose
+# Paints the text "YOU WIN" on the screen.
+# ARGS:
+# $a0: color
+.globl paint_you_lose
+paint_you_lose:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    jal calculate_number_line_position # calculate top left position of number line in frame buffer
+    move $t0, $v0 # copy top left position of number line in frame buffer to $s0
+    lw $s0, FRAME_BUFFER
+    add $s0, $s0, $t0
+    # Move buffer down 4 rows
+    addi $s0, $s0, 1260 # move right 320 pixels
+
+    move $s2, $s0 # $s2 = leftmost pixel of text
+    move $s1, $a0 # $s1 = color
+    
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_y
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_u
+
+    addi $s0, $s0, 28 # move right size of letter (4 pixels) + 3 pixels for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_l
+
+    addi $s0, $s0, 16 # move right size of letter (3 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_o
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_s
+
+    addi $s0, $s0, 20 # move right size of letter (4 pixels) + 1 pixel for space
+    move $a0, $s0
+    move $a1, $s1
+    jal paint_e
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END FUN paint_you_lose
