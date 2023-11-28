@@ -1,12 +1,5 @@
 # MIPS Multiplication Game
 
-## TODOS
-
-- [ ] Opponent moves (random selection)
-- [ ] Checking for win condition
-- [ ] Invalid move warning (if multiple was already picked)
-- [ ] "You Win", "You Lose", "Your move", "Opponent move" text
-
 ## How to Run
 
 1. Install patched version of MARS. MARS has a known deadlock bug with the keyboard and display simulator. See [here](https://dtconfect.wordpress.com/2013/02/09/mars-mips-simulator-lockup-hackfix/) for more info.
