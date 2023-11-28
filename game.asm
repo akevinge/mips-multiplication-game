@@ -34,6 +34,7 @@ SELECTED_POINTER: .word 1 # pointer selected to be moved 1 = top pointer, -1 = b
 TOP_POINTER_POSITION: .word -1 
 .globl BOTTOM_POINTER_POSITION
 BOTTOM_POINTER_POSITION: .word -1
+POINTER_LOCK: .word 0 # 0 = lock not held, -1 = lock held by bottom pointer, 1 = held by top pointer
 TICK_STATE: .word 0 # state of tick which signals an update to the display
 PREV_TICK_STATE: .word 0 # previous state of tick which signals an update to the display
 TICK_PERIOD_MS: .word 400 # period of tick which signals an update to the display
@@ -562,6 +563,8 @@ _make_board_selection_idx_found:
     li $t1, -1
     bne $t0, $t1, _make_board_selection_already_selected # if value at selection board at index != 1, selection was already made
 
+    jal unlock_pointer # unlock pointer
+
     la $t0, LAST_SELECTED_CELL_IDX # save last move, used for checking win condition
     sw $s1, 0($t0)
 
@@ -659,7 +662,74 @@ _get_board_selection_of_curr_pointers_end:
 # ██║  ██║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║███████║
 # ╚═╝  ╚═╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 
+# FUN lock_pointer
+# Attempts to set lock pointer.
+# ARGS:
+# $a0: 1/-1 position of lock
+# RETURN
+# $v0: -1 failed to lock, already locked on another pointer. 0 successfully locked
+lock_pointer:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+
+    lw $t0, POINTER_LOCK
+    beqz $t0, _lock_pointer_lock # if POINTER_LOCK == 0 || POINTER_LOCK == current pointer (already locked)
+    beq $t0, $a0, _lock_pointer_lock
+
+    j _lock_pointer_failed
+
+_lock_pointer_lock:
+    la $t0, POINTER_LOCK
+    sw $a0, 0($t0)
+    move $v0, $zero
+    j _lock_pointer_end
+
+_lock_pointer_failed:
+    li $v0, -1
+
+_lock_pointer_end:
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
+# END lock_pointer
+
+
+# FUN unlock_pointer
+# Unlocks pointer
+.globl unlock_pointer
+unlock_pointer:
+    addi		$sp, $sp, -20			# $sp -= 20
+    sw			$s0, 16($sp)
+    sw			$s1, 12($sp)
+    sw			$s2, 8($sp)
+    sw			$s3, 4($sp)
+    sw			$ra, 0($sp)
+  
+    la $t0, POINTER_LOCK
+    sw $zero, 0($t0)
+
+    lw			$s0, 16($sp)
+    lw			$s1, 12($sp)
+    lw			$s2, 8($sp)
+    lw			$s3, 4($sp)
+    lw			$ra, 0($sp)
+    addi		$sp, $sp, 20			# $sp += 20
+
+    jr			$ra					# jump to $ra
+
 # FUN select_top_pointer
+
+
 # Switches selected pointer to top pointer.
 .globl select_top_pointer
 select_top_pointer:
@@ -669,6 +739,9 @@ select_top_pointer:
     sw			$s2, 8($sp)
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
+
+    lw $t0, POINTER_LOCK
+    bnez $t0, _select_top_pointer_end # if POINTER_LOCK != 0, return
 
     # Ensure that bottom pointer is painted. Could be in the middle
     # of blinking.
@@ -681,6 +754,7 @@ select_top_pointer:
     li $t2, 1
     sw $t2, 0($t0) # set selected pointer to top pointer
 
+_select_top_pointer_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -704,6 +778,9 @@ select_bottom_pointer:
     sw			$s3, 4($sp)
     sw			$ra, 0($sp)
 
+    lw $t0, POINTER_LOCK
+    bnez $t0, _select_bottom_pointer_end # if POINTER_LOCK != 0, return
+
     # Ensure that top pointer is painted. Could be in the middle
     # of blinking.
     lw $a0, TOP_POINTER_POSITION
@@ -715,6 +792,7 @@ select_bottom_pointer:
     li $t2, -1
     sw $t2, 0($t0) # set selected pointer to bottom pointer
 
+_select_bottom_pointer_end:
     lw			$s0, 16($sp)
     lw			$s1, 12($sp)
     lw			$s2, 8($sp)
@@ -789,7 +867,7 @@ decrement_selected_pointer:
 # ARGS:
 # $a0: position to set selected pointer
 # RETURN:
-# $v0: 0 if position is valid, -1 if position is invalid
+# $v0: 0 if position is valid, -1 if position is invalid, 1 pointer locked
 set_selected_pointer:
     addi		$sp, $sp, -20			# $sp -= 20
     sw			$s0, 16($sp)
@@ -803,6 +881,10 @@ set_selected_pointer:
     li $t0, 8
     bgt $a0, $t0, _set_selected_pointer_invalid
     blt $a0, $zero, _set_selected_pointer_invalid
+
+    lw $a0, SELECTED_POINTER
+    jal lock_pointer
+    bnez $v0, _set_selected_pointer_locked
 
     # Erase previous selected pointer position.
     jal get_selected_pointer_position
@@ -826,6 +908,10 @@ set_selected_pointer:
 
 _set_selected_pointer_invalid:
     li $v0, -1
+    j _set_selected_pointer_end
+
+_set_selected_pointer_locked:
+    li $v0, 1
     j _set_selected_pointer_end
 
 _set_selected_pointer_end:
@@ -934,6 +1020,7 @@ opponent_select_move:
 
     # $a0 = random number
     jal set_selected_pointer
+    jal unlock_pointer
     # Player will obviously want to move top pointer because it's still at -1.
     jal select_top_pointer
     j _opponent_select_move_end
